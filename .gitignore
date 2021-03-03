@@ -102,3 +102,9 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Added
+bin
+obj
+.vs/
+*.csproj.user
