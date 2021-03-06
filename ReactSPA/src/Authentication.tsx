@@ -17,7 +17,7 @@ import Form from "react-bootstrap/Form";
 import { useHookstate } from "@hookstate/core";
 import { Formik } from "formik";
 import * as yup from "yup";
-import { Switch, Route } from "react-router-dom";
+import { Switch, Route, Link } from "react-router-dom";
 
 Amplify.configure(awsconfig);
 
@@ -74,6 +74,9 @@ function Authentication() {
                         </Route>
                         <Route path="/forgot-password">
                             <ForgotPassword />
+                        </Route>
+                        <Route path="/new-password">
+                            <NewPassword />
                         </Route>
                         <ForgotPassword />
                     </Switch>
@@ -148,10 +151,12 @@ function SignIn() {
                                         {errors.password}
                                     </Form.Control.Feedback>
                                 </Form.Group>
-                                <Form.Group controlId="formBasicCheckbox">
+                                <Form.Group controlId="forgot-password-text">
                                     <Form.Text className="text-muted">
                                         Forgot your password?{" "}
-                                        <a href="#">Reset password</a>
+                                        <Link to="/forgot-password">
+                                            Reset password
+                                        </Link>
                                     </Form.Text>
                                 </Form.Group>
                                 <Button
@@ -167,7 +172,7 @@ function SignIn() {
                 </Card.Body>
             </Card>
             <h5 className="my-3">
-                No account? <a href="#">Create account</a>
+                No account? <Link to="/Create-account">Create account</Link>
             </h5>
         </>
     );
@@ -275,7 +280,7 @@ function CreateAccount() {
                 </Card.Body>
             </Card>
             <h5 className="my-3">
-                Have account? <a href="#">Sign in</a>
+                Have account? <Link to="/sign-in">Sign in</Link>
             </h5>
         </>
     );
@@ -350,7 +355,7 @@ function ConfirmSignUp() {
                                 <Form.Group controlId="lost-code-text">
                                     <Form.Text className="text-muted">
                                         Lost your code?{" "}
-                                        <a href="#">Resend Code</a>
+                                        <Link to="/">Resend Code</Link>
                                     </Form.Text>
                                 </Form.Group>
 
@@ -367,7 +372,7 @@ function ConfirmSignUp() {
                 </Card.Body>
             </Card>
             <h6 className="my-3">
-                <a href="#">Back to Sign In</a>
+                <Link to="/sign-in">Back to Sign In</Link>
             </h6>
         </>
     );
@@ -435,7 +440,81 @@ function ForgotPassword() {
                 </Card.Body>
             </Card>
             <h6 className="my-3">
-                <a href="#">Back to Sign In</a>
+                <Link to="/sign-in">Back to Sign In</Link>
+            </h6>
+        </>
+    );
+}
+
+function NewPassword() {
+    interface Values {
+        password: string;
+    }
+    const schema = yup.object().shape({
+        password: yup
+            .string()
+            .required()
+            .matches(
+                /^(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/,
+                "Must Contain 8 Characters, One Number and One Special Case Character"
+            ),
+    });
+
+    function handleSubmit(values: Values) {
+        // Do work
+        console.log(values);
+    }
+
+    return (
+        <>
+            <h2 className="my-4">Reset Password</h2>
+            <Card>
+                <Card.Body>
+                    <Formik
+                        validationSchema={schema}
+                        onSubmit={handleSubmit}
+                        initialValues={{
+                            password: "",
+                        }}
+                    >
+                        {({
+                            handleSubmit,
+                            handleChange,
+                            handleBlur,
+                            values,
+                            touched,
+                            isValid,
+                            errors,
+                        }) => (
+                            <Form noValidate onSubmit={handleSubmit}>
+                                <Form.Group controlId="password">
+                                    <Form.Label>New Password</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Enter your new password"
+                                        onChange={handleChange}
+                                        value={values.password}
+                                        isInvalid={!!errors.password}
+                                    />
+                                    <Form.Control.Feedback type="invalid">
+                                        {errors.password}
+                                    </Form.Control.Feedback>
+                                </Form.Group>
+
+                                <Button
+                                    variant="primary"
+                                    type="submit"
+                                    className="float-right"
+                                >
+                                    CHANGE
+                                </Button>
+                            </Form>
+                        )}
+                    </Formik>
+                </Card.Body>
+            </Card>
+            <h6 className="my-3">
+                <Link to="/sign-in">Back to Sign In</Link>
             </h6>
         </>
     );

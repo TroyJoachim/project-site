@@ -60,6 +60,7 @@ function App() {
                                 "/create-account",
                                 "/confirm-account",
                                 "/forgot-password",
+                                "/new-password",
                             ]}
                         >
                             <Authentication />
