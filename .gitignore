@@ -108,3 +108,7 @@ bin
 obj
 .vs/
 *.csproj.user
+
+.fake
+.ionide
+.vscode

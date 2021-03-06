@@ -31,10 +31,10 @@ namespace WebAPI.Controllers
             var projects = await _context.Projects.Include(p => p.Images).Include(p => p.User).ToListAsync();
 
             // Map Project to ProjectDto and add it to the list
-            projects.ForEach((p) =>
+            foreach (var project in projects)
             {
                 // Map the main image
-                var image = p.Images.FirstOrDefault();
+                var image = project.Images.FirstOrDefault();
                 ImageDto newImageDto = null;
                 if (image != null)
                 {
@@ -49,35 +49,86 @@ namespace WebAPI.Controllers
                 // Map the User
                 var userDto = new UserDto()
                 {
-                    Id = p.User.Id,
-                    Username = p.User.Username
+                    AuthId = project.User.AuthId, // TODO: check if I need to send this
+                    Username = project.User.Username
                 };
 
-                var newProjectDto = new GetProjectsDto
+                var getProjectDto = new GetProjectsDto
                 {
-                    Title = p.Title,
+                    Title = project.Title,
                     Image = newImageDto,
-                    User = userDto
+                    User = userDto,
                 };
 
-                projectsDto.Add(newProjectDto);
-            });
+                projectsDto.Add(getProjectDto);
+            };
 
             return projectsDto;
         }
 
         // GET: api/Projects/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Project>> GetProject(int id)
+        public async Task<ActionResult<GetProjectDto>> GetProject(int id)
         {
-            var project = await _context.Projects.FindAsync(id);
+            var project = await _context.Projects
+                .Include(p => p.Category)
+                .Include(p => p.User)
+                .Include(p => p.Images)
+                .Include(p => p.Files)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            // Map User to UserDto
+            var userDto = new UserDto()
+            {
+                //Id = project.User.Id,
+                AuthId = project.User.AuthId, // TODO: check this
+                Username = project.User.Username,
+                AvatarPath = "TODO"
+            };
+
+            // Map Image to ImageDto
+            var imageDtoList = new List<ImageDto>();
+            foreach (var image in project.Images)
+            {
+                var imageDto = new ImageDto()
+                {
+                    FileName = image.FileName,
+                    Path = image.Path,
+                    Size = image.Size
+                };
+                imageDtoList.Add(imageDto);
+            }
+
+            // Map File to FileDto
+            var fileDtoList = new List<FileDto>();
+            foreach (var file in project.Files)
+            {
+                var fileDto = new FileDto()
+                {
+                    FileName = file.FileName,
+                    Path = file.Path,
+                    Size = file.Size
+                };
+                fileDtoList.Add(fileDto);
+            }
+
+            // Map Project to GetProjectDto
+            var getProjectDto = new GetProjectDto()
+            {
+                Title = project.Title,
+                Description = project.Description,
+                Category = project.Category.Name,
+                User = userDto,
+                Images = imageDtoList,
+                Files = fileDtoList
+            };
 
             if (project == null)
             {
                 return NotFound();
             }
 
-            return project;
+            return getProjectDto;
         }
 
         // PUT: api/Projects/5
@@ -119,19 +170,20 @@ namespace WebAPI.Controllers
             var buildSteps = new List<BuildStep>();
 
             // Map each BuildStepDto to a BuildStep Model
-            project.BuildSteps.ForEach((bs) =>
+            foreach (var buildStep in project.BuildSteps)
             {
                 var newBuildStep = new BuildStep
                 {
-                    Title = bs.Title,
-                    Description = bs.Description,
-                    Images = MapImages(bs.Images),
-                    Files = MapFiles(bs.Files),
+                    Title = buildStep.Title,
+                    Description = buildStep.Description,
+                    Images = MapImages(buildStep.Images),
+                    Files = MapFiles(buildStep.Files),
                 };
 
                 buildSteps.Add(newBuildStep);
-            });
+            };
 
+            var category = await _context.Categories.FindAsync(project.CategoryId);
             var user = await _context.Users.FindAsync(project.UserId);
 
             // Map the ProjectDTO to a Project Model
@@ -139,6 +191,7 @@ namespace WebAPI.Controllers
             {
                 Title = project.Title,
                 Description = project.Description,
+                Category = category,
                 User = user,
                 Images = MapImages(project.Images),
                 Files = MapFiles(project.Files),
@@ -175,40 +228,40 @@ namespace WebAPI.Controllers
             return _context.Projects.Any(e => e.Id == id);
         }
 
-        private static List<File> MapFiles(List<FileDto> files)
+        private static ICollection<File> MapFiles(ICollection<FileDto> files)
         {
             // Map project files
             var fileList = new List<File>();
-            files.ForEach((f) =>
+            foreach (var file in files)
             {
-                var file = new File
+                var f = new File
                 {
-                    FileName = f.FileName,
-                    Path = f.Path,
-                    Size = f.Size
+                    FileName = file.FileName,
+                    Path = file.Path,
+                    Size = file.Size
                 };
 
-                fileList.Add(file);
-            });
+                fileList.Add(f);
+            };
 
             return fileList;
         }
 
-        private static List<Image> MapImages(List<ImageDto> images)
+        private static ICollection<Image> MapImages(ICollection<ImageDto> images)
         {
             // Map project images
             var imageList = new List<Image>();
-            images.ForEach((pi) =>
+            foreach (var image in images)
             {
-                var image = new Image
+                var i = new Image
                 {
-                    FileName = pi.FileName,
-                    Path = pi.Path,
-                    Size = pi.Size
+                    FileName = image.FileName,
+                    Path = image.Path,
+                    Size = image.Size
                 };
 
-                imageList.Add(image);
-            });
+                imageList.Add(i);
+            };
 
             return imageList;
         }

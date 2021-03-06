@@ -2,6 +2,7 @@ import Auth from "@aws-amplify/auth";
 import { Hub } from "aws-amplify";
 import { createState } from "@hookstate/core";
 import { CognitoUserSession } from "amazon-cognito-identity-js";
+import { createUser } from "./agent";
 
 interface GlobalState {
     isAuthenticating: boolean;
@@ -16,7 +17,8 @@ const globalState = createState<GlobalState>({
     session: null,
 });
 
-const listener = (data: any) => {
+const listener = async (data: any) => {
+    console.log(data.payload.event);
     switch (data.payload.event) {
         case "signIn":
             console.log("user signed in");
@@ -26,6 +28,7 @@ const listener = (data: any) => {
         case "signUp":
             console.log("user signed up");
             break;
+
         case "signOut":
             console.log("user signed out");
             // Reset the global state.

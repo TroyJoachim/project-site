@@ -20,7 +20,6 @@ export interface ITempProject {
 export interface IHomeProject {
     id: string;
     name: string;
-    description: string;
     sub_category: string;
     images: string[];
     image: string;
@@ -162,4 +161,12 @@ export enum LoadingState {
     Loading,
     Completed,
     Failed,
+}
+
+export interface ICreateUser {
+    authId: string;
+    username: string;
+    avatarPath: string;
+    firstName: string;
+    lastName: string;
 }

@@ -47,6 +47,8 @@ namespace WebAPI.Dto
         public string Description { get; set; }
         [Required]
         public int UserId { get; set; }
+        [Required]
+        public int CategoryId { get; set; }
         public List<FileDto> Files { get; set; }
         public List<ImageDto> Images { get; set; }
         public List<BuildStepDto> BuildSteps { get; set; }
@@ -54,8 +56,11 @@ namespace WebAPI.Dto
 
     public class UserDto
     {
-        public int Id { get; set; }
+        [Required]
+        public string AuthId { get; set; }
+        [Required]
         public string Username { get; set; }
+        public string AvatarPath { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
 
@@ -66,5 +71,15 @@ namespace WebAPI.Dto
         public string Title { get; set; }
         public ImageDto Image { get; set; }
         public UserDto User { get; set; }
+    }
+
+    public class GetProjectDto
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Category { get; set; }
+        public UserDto User { get; set; }
+        public List<FileDto> Files { get; set; }
+        public List<ImageDto> Images { get; set; }
     }
 }

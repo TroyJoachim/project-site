@@ -21,7 +21,6 @@ function Home() {
                     return {
                         id: project.id,
                         name: project.name,
-                        description: project.description,
                         sub_category: project.sub_category,
                         images: project.images,
                         image: "",

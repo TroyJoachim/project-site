@@ -6,7 +6,8 @@ import CreateProject from "./CreateProject";
 import EditProject from "./EditProject";
 import UserDashboard from "./UserDashboard";
 import Footer from "./Footer";
-import SignIn from "./SignIn";
+import Authentication from "./Authentication";
+import TestPage from "./TestPage";
 import MyAccount from "./MyAccount";
 import { globalState, getAuthenticatedUser } from "./globalState";
 import { useHookstate } from "@hookstate/core";
@@ -49,8 +50,19 @@ function App() {
 
                         <Route path="/project/:id" component={Project} />
 
-                        <Route path="/sign-in">
-                            <SignIn />
+                        <Route exact path="/test-page">
+                            <TestPage />
+                        </Route>
+
+                        <Route
+                            path={[
+                                "/sign-in",
+                                "/create-account",
+                                "/confirm-account",
+                                "/forgot-password",
+                            ]}
+                        >
+                            <Authentication />
                         </Route>
 
                         <ProtectedRoute

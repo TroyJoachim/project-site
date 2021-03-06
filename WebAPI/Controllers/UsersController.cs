@@ -81,7 +81,7 @@ namespace WebAPI.Controllers
             // Map UserDto to User
             var newUser = new User()
             {
-                Id = user.Id,
+                AuthId = user.AuthId,
                 Username = user.Username,
                 FirstName = user.FirstName,
                 LastName = user.LastName
@@ -90,7 +90,7 @@ namespace WebAPI.Controllers
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
+            return CreatedAtAction("GetUser", new { Id = newUser.Id }, user);
         }
 
         // DELETE: api/Users/5

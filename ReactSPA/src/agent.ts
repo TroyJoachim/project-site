@@ -13,6 +13,7 @@ import {
     IPostProjectResponse,
     ICreateProjectResponse,
     ICategoryResponse,
+    ICreateUser
 } from "./types";
 
 // Configure the global level for aws storage.
@@ -20,7 +21,7 @@ import {
 Storage.configure({ level: "protected" });
 
 const http = axios.create({
-    baseURL: "http://localhost:8000/",
+    baseURL: "https://localhost:5001/",
 });
 
 interface IProjectsResponse {
@@ -322,9 +323,44 @@ async function getImage(id: string) {
     }
 }
 
+async function createUser(id: string, username: string) {
+    try {
+        // Create a user opject to send to the api
+        const newUser = {
+            authId : id,
+            username : username
+        }
+
+        const response = await http.post<ICreateUser>(
+            "/api/users",
+            newUser,
+            {
+                headers: {
+                    "Content-type": "application/json",
+                    Authorization: `Bearer ${getUserToken()}`,
+                },
+                // Manually map the response to a Typescript interface.
+                transformResponse: [
+                    (response: any) => {
+                        const createUserResponse: ICreateUser = JSON.parse(
+                            response
+                        );
+                        return createUserResponse;
+                    },
+                ],
+            }
+        );
+        return response;
+    } catch (err) {
+        console.log(err);
+        return null;
+    }
+}
+
 export {
     http,
     createProject,
+    createUser,
     getProjects,
     getProject,
     downloadFile,
