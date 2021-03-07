@@ -55,12 +55,13 @@ const listener = async (data: any) => {
 Hub.listen("auth", listener);
 
 async function getAuthenticatedUser() {
+    console.log("getAuthenticatedUser");
     // TODO: check if the function save the user information in the browsers local state.
     globalState.isAuthenticating.set(true);
     try {
         const user = await Auth.currentAuthenticatedUser();
         if (user !== null) {
-            console.log(user); // TODO: For dev
+            console.log(user);
             globalState.isAuthenticated.set(true);
             globalState.isAuthenticating.set(false);
         }
@@ -70,6 +71,7 @@ async function getAuthenticatedUser() {
             .then((session) => globalState.session.set(session))
             .catch((err) => console.log(err));
     } catch (error) {
+        console.log(error);
         globalState.isAuthenticated.set(false);
         globalState.isAuthenticating.set(false);
     }
