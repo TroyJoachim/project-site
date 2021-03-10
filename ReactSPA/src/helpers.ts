@@ -120,6 +120,13 @@ function localizeDateTime(utc: string) {
     return date.toLocaleString(navigator.language, { timeZone: 'UTC' });
 }
 
+function errorMessage(err: any) {
+    if (typeof err === "string") {
+        return err;
+    }
+    return err.message ? err.message : JSON.stringify(err);
+}
+
 export {
     humanFileSize,
     fileDownload,
@@ -128,4 +135,5 @@ export {
     getIdentityId,
     notEmpty,
     localizeDateTime,
+    errorMessage,
 };

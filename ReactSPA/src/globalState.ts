@@ -22,8 +22,7 @@ const listener = async (data: any) => {
     switch (data.payload.event) {
         case "signIn":
             console.log("user signed in");
-            globalState.isAuthenticated.set(true);
-            globalState.isAuthenticating.set(false);
+            getAuthenticatedUser();
             break;
         case "signUp":
             console.log("user signed up");

@@ -12,87 +12,81 @@ import MyAccount from "./MyAccount";
 import { globalState, getAuthenticatedUser } from "./globalState";
 import { useHookstate } from "@hookstate/core";
 import {
-    BrowserRouter as Router,
-    Switch,
-    Route,
-    Redirect,
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Redirect,
 } from "react-router-dom";
 
 function ProtectedRoute(props: {
-    path: string;
-    component: (props: any) => JSX.Element;
+  path: string;
+  component: (props: any) => JSX.Element;
 }) {
-    const gState = useHookstate(globalState);
-    if (gState.isAuthenticated.get()) {
-        return <Route path={props.path} component={props.component} />;
-    } else {
-        return <Redirect to={"/sign-in"} />;
-    }
+  const gState = useHookstate(globalState);
+  if (gState.isAuthenticated.get()) {
+    return <Route path={props.path} component={props.component} />;
+  } else {
+    return <Redirect to={"/sign-in"} />;
+  }
 }
 
 function App() {
-    const gState = useHookstate(globalState);
+  const gState = useHookstate(globalState);
 
-    useEffect(() => {
-        getAuthenticatedUser();
-    }, []);
+  useEffect(() => {
+    getAuthenticatedUser();
+  }, []);
 
-    // Wait for the authentication api to return before loading
-    if (!gState.isAuthenticating.get()) {
-        return (
-            <Router>
-                <TopNav />
-                <main className="flex-shrink-0">
-                    <Switch>
-                        <Route exact path="/">
-                            <Home />
-                        </Route>
+  // Wait for the authentication api to return before loading
+  if (!gState.isAuthenticating.get()) {
+    return (
+      <Router>
+        <TopNav />
+        <main className="flex-shrink-0">
+          <Switch>
+            <Route exact path="/">
+              <Home />
+            </Route>
 
-                        <Route path="/project/:id" component={Project} />
+            <Route path="/project/:id" component={Project} />
 
-                        <Route exact path="/test-page">
-                            <TestPage />
-                        </Route>
+            <Route exact path="/test-page">
+              <TestPage />
+            </Route>
 
-                        <Route
-                            path={[
-                                "/sign-in",
-                                "/create-account",
-                                "/confirm-account",
-                                "/forgot-password",
-                                "/new-password",
-                            ]}
-                        >
-                            <Authentication />
-                        </Route>
+            <Route
+              path={[
+                "/sign-in",
+                "/create-account",
+                "/confirm-account",
+                "/forgot-password",
+                "/new-password",
+              ]}
+            >
+              <Authentication />
+            </Route>
 
-                        <ProtectedRoute
-                            path="/create-project"
-                            component={CreateProject}
-                        />
+            <ProtectedRoute path="/create-project" component={CreateProject} />
 
-                        <ProtectedRoute
-                            path="/edit-project/:id"
-                            component={EditProject}
-                        />
+            <ProtectedRoute path="/edit-project/:id" component={EditProject} />
 
-                        <ProtectedRoute
-                            path="/dashboard/:username"
-                            component={UserDashboard}
-                        />
+            <ProtectedRoute
+              path="/dashboard/:username"
+              component={UserDashboard}
+            />
 
-                        <ProtectedRoute
-                            path="/my-account/:id"
-                            component={MyAccount}
-                        />
-                    </Switch>
-                </main>
-                <Footer />
-            </Router>
-        );
-    } else {
-        return <></>;
-    }
+            <ProtectedRoute
+              path="/my-account/:username"
+              component={MyAccount}
+            />
+          </Switch>
+        </main>
+        <Footer />
+      </Router>
+    );
+  } else {
+    return <></>;
+  }
 }
 
 export default App;
