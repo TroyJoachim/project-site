@@ -13,7 +13,7 @@ import * as yup from "yup";
 import { getUser, updateUser } from "./agent";
 import { IUser } from "./types";
 
-function MyAccount() {
+export default function MyAccount() {
   return (
     <Container>
       <Row>
@@ -90,10 +90,10 @@ function PersonalInfo() {
     },
     onSubmit: async (values: Values) => {
       console.log(values);
+      loadingState.set(true);
       // Update the user values in state
       user.firstName.set(values.firstName);
       user.lastName.set(values.lastName);
-      //user.attach(Downgraded);
       try {
         // Update user info
         const response = await updateUser(user.get());
@@ -111,16 +111,22 @@ function PersonalInfo() {
           error: true,
           message: "Failed to update user information.",
         });
+      } finally {
+        loadingState.set(false);
       }
     },
   });
 
-  function feedbackMsg() {
+  function feedbackAlert() {
     if (!feedback.show.value) return <></>;
 
     const msgType = feedback.value.error ? "danger" : "success";
     return (
-      <Alert variant={msgType} onClose={() => feedback.show.set(false)} dismissible>
+      <Alert
+        variant={msgType}
+        onClose={() => feedback.show.set(false)}
+        dismissible
+      >
         {feedback.value.message}
       </Alert>
     );
@@ -129,7 +135,7 @@ function PersonalInfo() {
   return (
     <>
       <h3 className="my-3">Personal Information</h3>
-      {feedbackMsg()}
+      {feedbackAlert()}
       <Form noValidate onSubmit={formik.handleSubmit}>
         <Form.Group controlId="firstName">
           <Form.Label>First Name</Form.Label>
@@ -172,143 +178,146 @@ function PersonalInfo() {
 }
 
 function ChangePasswordForm() {
-  const validated = useHookstate(false);
-  const initFormFields = {
-    oldPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  };
-  const formFields = useHookstate(initFormFields);
-  const formErrors = useHookstate({
-    newPassword: "",
-    newPasswordInvalid: false,
-    confirmPassword: "",
-    confirmPasswordInvalid: false,
-  });
+  interface Values {
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }
+  interface Feedback {
+    show: boolean;
+    error: boolean;
+    message: string;
+  }
   // Loading state
-  const isChanging = useHookstate(false);
+  const loading = useHookstate(false);
   // Final result
-  const showAlert = useHookstate(false);
+  const feedback = useHookstate<Feedback>({
+    show: false,
+    error: false,
+    message: "",
+  });
 
-  // TODO: This could be better. I might look into something like Formik or try to imporve the logic.
-  function comparePasswords() {
-    if (
-      validated.get() &&
-      formFields.newPassword.get() !== formFields.confirmPassword.get()
-    ) {
-      console.log("passwords don't match.");
-      formErrors.set({
-        newPassword: "Your passwords do not match.",
-        newPasswordInvalid: true,
-        confirmPassword: "Your passwords do not match.",
-        confirmPasswordInvalid: true,
-      });
-      return false;
-    } else {
-      formErrors.set({
-        newPassword: "Please enter your new password.",
-        newPasswordInvalid: false,
-        confirmPassword: "Please enter your new password again.",
-        confirmPasswordInvalid: false,
-      });
-      return true;
-    }
+  const schema = yup.object().shape({
+    oldPassword: yup.string(),
+    newPassword: yup
+      .string()
+      .required()
+      .matches(
+        /^(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/,
+        "Must Contain 8 Characters, One Number and One Special Case Character"
+      ),
+    confirmPassword: yup
+      .string()
+      .oneOf([yup.ref("newPassword")], "Password does not match")
+      .required(),
+  });
+
+  const formik = useFormik({
+    validationSchema: schema,
+    validateOnChange: false,
+    enableReinitialize: true,
+    initialValues: {
+      oldPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+    onSubmit: async (values: Values) => {
+      console.log(values);
+      loading.set(true);
+      try {
+        const user = await Auth.currentAuthenticatedUser();
+        await Auth.changePassword(user, values.oldPassword, values.newPassword);
+
+        feedback.set({
+          show: true,
+          error: false,
+          message: "Your password has been updated successfully",
+        });
+        // Reset the form
+        formik.resetForm();
+      } catch (error) {
+        console.log(error);
+        feedback.set({
+          show: true,
+          error: true,
+          message: "Error updating password",
+        });
+      } finally {
+        loading.set(false);
+      }
+    },
+  });
+
+  function feedbackAlert() {
+    if (!feedback.show.value) return <></>;
+
+    const msgType = feedback.value.error ? "danger" : "success";
+    return (
+      <Alert
+        variant={msgType}
+        onClose={() => feedback.show.set(false)}
+        dismissible
+      >
+        {feedback.value.message}
+      </Alert>
+    );
   }
-
-  function handleNewPassword(e: React.ChangeEvent<HTMLInputElement>) {
-    formFields.newPassword.set(e.target.value);
-    comparePasswords();
-  }
-
-  function handleConfirmPassword(e: React.ChangeEvent<HTMLInputElement>) {
-    formFields.confirmPassword.set(e.target.value);
-    comparePasswords();
-  }
-
-  const handleSubmit = (event: any) => {
-    event.preventDefault();
-    event.stopPropagation();
-    validated.set(true);
-    // Clear previous errors
-    if (comparePasswords()) {
-      // submit form
-      validated.set(false);
-      isChanging.set(true);
-      Auth.currentAuthenticatedUser()
-        .then((user) => {
-          return Auth.changePassword(
-            user,
-            formFields.oldPassword.get(),
-            formFields.newPassword.get()
-          );
-        })
-        .then((data) => {
-          // Clear the form fields
-          formFields.set(initFormFields);
-          isChanging.set(false);
-          showAlert.set(true);
-        })
-        .catch((err) => console.log(err));
-    }
-  };
 
   return (
     <>
       <h3 className="my-3">Update Password</h3>
-      <DismissibleAlert
-        alertType="success"
-        alertMessage="Your password was updated successfully."
-        showAlert={showAlert}
-      />
-      <Form
-        noValidate
-        validated={validated.get()}
-        onSubmit={handleSubmit}
-        className="mb-5"
-      >
-        <Form.Group controlId="old_password">
+      {feedbackAlert()}
+      <Form noValidate onSubmit={formik.handleSubmit} className="mb-5">
+        <Form.Group controlId="oldPassword">
           <Form.Label>Old Password</Form.Label>
           <Form.Control
+            name="oldPassword"
             type="password"
-            required
-            onChange={(e) => formFields.oldPassword.set(e.target.value)}
-            disabled={isChanging.get()}
-            value={formFields.oldPassword.get()}
+            placeholder="Enter your current password"
+            onChange={formik.handleChange}
+            disabled={loading.get()}
+            value={formik.values.oldPassword}
+            isInvalid={!!formik.errors.oldPassword}
           />
           <Form.Control.Feedback type="invalid">
-            Please enter your old password.
+            {formik.errors.oldPassword}
           </Form.Control.Feedback>
         </Form.Group>
-        <Form.Group controlId="new_password">
+
+        <Form.Group controlId="newPassword">
           <Form.Label>New Password</Form.Label>
           <Form.Control
+            name="newPassword"
             type="password"
-            required
-            isInvalid={formErrors.newPasswordInvalid.get()}
-            onChange={handleNewPassword}
-            disabled={isChanging.get()}
-            value={formFields.newPassword.get()}
+            placeholder="Enter your new password"
+            onChange={formik.handleChange}
+            disabled={loading.get()}
+            value={formik.values.newPassword}
+            isInvalid={!!formik.errors.newPassword}
           />
           <Form.Control.Feedback type="invalid">
-            {formErrors.newPassword.get()}
+            {formik.errors.newPassword}
           </Form.Control.Feedback>
         </Form.Group>
-        <Form.Group controlId="confirm_password">
+
+        <Form.Group controlId="confirmPassword">
           <Form.Label>Confirm Password</Form.Label>
           <Form.Control
+            name="confirmPassword"
             type="password"
-            required
-            isInvalid={formErrors.confirmPasswordInvalid.get()}
-            onChange={handleConfirmPassword}
-            disabled={isChanging.get()}
-            value={formFields.confirmPassword.get()}
+            placeholder="Re-enter your new password"
+            onChange={formik.handleChange}
+            value={formik.values.confirmPassword}
+            disabled={loading.get()}
+            isInvalid={!!formik.errors.confirmPassword}
           />
           <Form.Control.Feedback type="invalid">
-            {formErrors.confirmPassword.get()}
+            {formik.errors.confirmPassword}
           </Form.Control.Feedback>
         </Form.Group>
+
         <Form.Group className="text-right">
-          {isChanging.get() ? (
+          {loading.get() ? (
             <Button disabled>
               <Spinner
                 as="span"
@@ -328,27 +337,3 @@ function ChangePasswordForm() {
     </>
   );
 }
-
-function DismissibleAlert(props: {
-  alertType: string;
-  alertMessage: string;
-  showAlert: State<boolean>;
-}) {
-  const show = useHookstate(props.showAlert);
-
-  if (show.get()) {
-    return (
-      <Alert
-        variant={props.alertType}
-        onClose={() => show.set(false)}
-        dismissible
-      >
-        {props.alertMessage}
-      </Alert>
-    );
-  } else {
-    return <></>;
-  }
-}
-
-export default MyAccount;
