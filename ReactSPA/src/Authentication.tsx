@@ -332,6 +332,7 @@ function ConfirmSignUp(props: { state: State<LoginState> }) {
   const formik = useFormik({
     validationSchema: schema,
     validateOnChange: false,
+    enableReinitialize: true,
     initialValues: {
       username: props.state.username.value ? props.state.username.value : "",
       code: "",

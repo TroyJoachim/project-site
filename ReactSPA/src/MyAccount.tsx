@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container";
@@ -7,22 +7,13 @@ import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Spinner from "react-bootstrap/Spinner";
 import { useHookstate, State } from "@hookstate/core";
-import Auth from "@aws-amplify/auth";
+import { Auth, CognitoUser } from "@aws-amplify/auth";
 import { useFormik } from "formik";
 import * as yup from "yup";
+import { getUser, updateUser } from "./agent";
+import { IUser } from "./types";
 
 function MyAccount() {
-  const validated = useHookstate(false);
-
-  const handleSubmit = (event: any) => {
-    const form = event.currentTarget;
-    if (form.checkValidity() === false) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
-    validated.set(true);
-  };
   return (
     <Container>
       <Row>
@@ -36,11 +27,53 @@ function MyAccount() {
 }
 
 function PersonalInfo() {
-  const loadingState = useHookstate<boolean>(false);
+  interface Feedback {
+    show: boolean;
+    error: boolean;
+    message: string;
+  }
   interface Values {
     firstName: string;
     lastName: string;
   }
+
+  const feedback = useHookstate<Feedback>({
+    show: false,
+    error: false,
+    message: "",
+  });
+  const loadingState = useHookstate<boolean>(false);
+  const user = useHookstate<IUser>({
+    id: 0,
+    username: "",
+    authId: "",
+    firstName: "",
+    lastName: "",
+    projects: null,
+  });
+
+  useEffect(() => {
+    // Get user information from API
+
+    async function getUserInfo() {
+      try {
+        const cognitoUser: CognitoUser = await Auth.currentAuthenticatedUser();
+        const attributes = await Auth.userAttributes(cognitoUser);
+        const subResult = attributes.find((a) => a.Name === "sub");
+        if (!subResult) return;
+
+        const sub = subResult.getValue();
+        const response = await getUser(sub);
+        if (response && response.status === 200) {
+          console.log("User response", response);
+          user.set(response.data);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    getUserInfo();
+  }, []);
 
   const schema = yup.object().shape({
     firstName: yup.string(),
@@ -50,23 +83,58 @@ function PersonalInfo() {
   const formik = useFormik({
     validationSchema: schema,
     validateOnChange: false,
+    enableReinitialize: true,
     initialValues: {
-      firstName: "",
-      lastName: "",
+      firstName: user.firstName.get(),
+      lastName: user.lastName.get(),
     },
     onSubmit: async (values: Values) => {
-      // Do work
+      console.log(values);
+      // Update the user values in state
+      user.firstName.set(values.firstName);
+      user.lastName.set(values.lastName);
+      //user.attach(Downgraded);
+      try {
+        // Update user info
+        const response = await updateUser(user.get());
+        if (response && response.status === 204) {
+          feedback.set({
+            show: true,
+            error: false,
+            message: "Your user info has been updated successfully.",
+          });
+        }
+      } catch (error) {
+        console.log(error);
+        feedback.set({
+          show: true,
+          error: true,
+          message: "Failed to update user information.",
+        });
+      }
     },
   });
+
+  function feedbackMsg() {
+    if (!feedback.show.value) return <></>;
+
+    const msgType = feedback.value.error ? "danger" : "success";
+    return (
+      <Alert variant={msgType} onClose={() => feedback.show.set(false)} dismissible>
+        {feedback.value.message}
+      </Alert>
+    );
+  }
 
   return (
     <>
       <h3 className="my-3">Personal Information</h3>
+      {feedbackMsg()}
       <Form noValidate onSubmit={formik.handleSubmit}>
-        <Form.Group controlId="firstname">
+        <Form.Group controlId="firstName">
           <Form.Label>First Name</Form.Label>
           <Form.Control
-            name="firstname"
+            name="firstName"
             type="text"
             placeholder="Enter your first name"
             onChange={formik.handleChange}
@@ -78,10 +146,10 @@ function PersonalInfo() {
           </Form.Control.Feedback>
         </Form.Group>
 
-        <Form.Group controlId="lastname">
+        <Form.Group controlId="lastName">
           <Form.Label>First Name</Form.Label>
           <Form.Control
-            name="lastname"
+            name="lastName"
             type="text"
             placeholder="Enter your last name"
             onChange={formik.handleChange}
@@ -93,16 +161,11 @@ function PersonalInfo() {
           </Form.Control.Feedback>
         </Form.Group>
 
-        <Form.Group>
-          <Button
-            variant="mint"
-            type="submit"
-            className="float-right"
-            disabled={loadingState.get()}
-          >
+        <div className="text-right">
+          <Button variant="mint" type="submit" disabled={loadingState.get()}>
             Save
           </Button>
-        </Form.Group>
+        </div>
       </Form>
     </>
   );
