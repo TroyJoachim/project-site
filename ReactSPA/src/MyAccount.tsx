@@ -6,12 +6,15 @@ import Row from "react-bootstrap/Row";
 import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Spinner from "react-bootstrap/Spinner";
-import { useHookstate, State } from "@hookstate/core";
+import { useHookstate, State, none } from "@hookstate/core";
 import { Auth, CognitoUser } from "@aws-amplify/auth";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { getUser, updateUser } from "./agent";
 import { IUser } from "./types";
+import { globalState } from "./globalState";
+import Avatar from "react-avatar-edit";
+import avatar from "./images/empty-avatar-65.png";
 
 export default function MyAccount() {
   return (
@@ -19,6 +22,7 @@ export default function MyAccount() {
       <Row>
         <Col>
           <PersonalInfo />
+          <AvatarForm />
           <ChangePasswordForm />
         </Col>
       </Row>
@@ -37,12 +41,13 @@ function PersonalInfo() {
     lastName: string;
   }
 
+  const gState = useHookstate(globalState);
+  const loadingState = useHookstate<boolean>(false);
   const feedback = useHookstate<Feedback>({
     show: false,
     error: false,
     message: "",
   });
-  const loadingState = useHookstate<boolean>(false);
   const user = useHookstate<IUser>({
     id: 0,
     username: "",
@@ -53,22 +58,17 @@ function PersonalInfo() {
   });
 
   useEffect(() => {
-    // Get user information from API
-
     async function getUserInfo() {
       try {
-        const cognitoUser: CognitoUser = await Auth.currentAuthenticatedUser();
-        const attributes = await Auth.userAttributes(cognitoUser);
-        const subResult = attributes.find((a) => a.Name === "sub");
-        if (!subResult) return;
+        if (!gState.sub.value) throw new Error("Sub value was missing");
 
-        const sub = subResult.getValue();
-        const response = await getUser(sub);
+        const response = await getUser(gState.sub.value);
         if (response && response.status === 200) {
           console.log("User response", response);
           user.set(response.data);
         }
       } catch (error) {
+        // TODO: handle error
         console.log(error);
       }
     }
@@ -173,6 +173,45 @@ function PersonalInfo() {
           </Button>
         </div>
       </Form>
+    </>
+  );
+}
+
+function AvatarForm() {
+  const state = useHookstate({ preview: undefined, src: "" });
+
+  function onClose() {
+    state.preview.set(none);
+  }
+
+  function onCrop(preview: any) {
+    state.preview.set(preview);
+  }
+
+  function onBeforeFileLoad(elem: any) {
+    if (elem.target.files[0].size > 71680) {
+      alert("File is too big!");
+      elem.target.value = "";
+    }
+  }
+
+  return (
+    <>
+      <h3 className="my-3">User Avatar</h3>
+      <img
+        className="avatar"
+        src={state.preview.value ? state.preview.value : avatar}
+        alt="Preview"
+      />
+      <Avatar
+        width={300}
+        height={200}
+        onCrop={onCrop}
+        onClose={onClose}
+        onBeforeFileLoad={onBeforeFileLoad}
+        src={state.src.get()}
+        exportSize={65}
+      />
     </>
   );
 }
@@ -318,7 +357,7 @@ function ChangePasswordForm() {
 
         <Form.Group className="text-right">
           {loading.get() ? (
-            <Button disabled>
+            <Button variant="mint" disabled>
               <Spinner
                 as="span"
                 animation="border"
@@ -330,7 +369,9 @@ function ChangePasswordForm() {
               Updating
             </Button>
           ) : (
-            <Button type="submit">Save</Button>
+            <Button variant="mint" type="submit">
+              Update
+            </Button>
           )}
         </Form.Group>
       </Form>

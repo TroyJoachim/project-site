@@ -85,7 +85,19 @@ function App() {
       </Router>
     );
   } else {
-    return <></>;
+    return (
+      <div className="loading-container">
+        <div className="loader">
+          <div className="loader--dot"></div>
+          <div className="loader--dot"></div>
+          <div className="loader--dot"></div>
+          <div className="loader--dot"></div>
+          <div className="loader--dot"></div>
+          <div className="loader--dot"></div>
+          <div className="loader--text"></div>
+        </div>
+      </div>
+    );
   }
 }
 
