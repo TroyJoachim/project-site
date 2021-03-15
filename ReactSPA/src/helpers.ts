@@ -14,126 +14,146 @@ import { Auth } from "aws-amplify";
  * @return Formatted string.
  */
 function humanFileSize(bytes: number, si = false, dp = 1) {
-    const thresh = si ? 1000 : 1024;
+  const thresh = si ? 1000 : 1024;
 
-    if (Math.abs(bytes) < thresh) {
-        return bytes + " B";
-    }
+  if (Math.abs(bytes) < thresh) {
+    return bytes + " B";
+  }
 
-    const units = si
-        ? ["kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
-        : ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
-    let u = -1;
-    const r = 10 ** dp;
+  const units = si
+    ? ["kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
+    : ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
+  let u = -1;
+  const r = 10 ** dp;
 
-    do {
-        bytes /= thresh;
-        ++u;
-    } while (
-        Math.round(Math.abs(bytes) * r) / r >= thresh &&
-        u < units.length - 1
-    );
+  do {
+    bytes /= thresh;
+    ++u;
+  } while (
+    Math.round(Math.abs(bytes) * r) / r >= thresh &&
+    u < units.length - 1
+  );
 
-    return bytes.toFixed(dp) + " " + units[u];
+  return bytes.toFixed(dp) + " " + units[u];
 }
 
 // Source: https://github.com/kennethjiang/js-file-download
 function fileDownload(
-    data: string | ArrayBuffer | ArrayBufferView | Blob,
-    filename: string,
-    mime?: string,
-    bom?: string | Uint8Array
+  data: string | ArrayBuffer | ArrayBufferView | Blob,
+  filename: string,
+  mime?: string,
+  bom?: string | Uint8Array
 ): void {
-    var blobData = typeof bom !== "undefined" ? [bom, data] : [data];
-    var blob = new Blob(blobData, { type: mime || "application/octet-stream" });
-    if (typeof window.navigator.msSaveBlob !== "undefined") {
-        // IE workaround for "HTML7007: One or more blob URLs were
-        // revoked by closing the blob for which they were created.
-        // These URLs will no longer resolve as the data backing
-        // the URL has been freed."
-        window.navigator.msSaveBlob(blob, filename);
-    } else {
-        var blobURL =
-            window.URL && window.URL.createObjectURL
-                ? window.URL.createObjectURL(blob)
-                : window.webkitURL.createObjectURL(blob);
-        var tempLink = document.createElement("a");
-        tempLink.style.display = "none";
-        tempLink.href = blobURL;
-        tempLink.setAttribute("download", filename);
+  var blobData = typeof bom !== "undefined" ? [bom, data] : [data];
+  var blob = new Blob(blobData, { type: mime || "application/octet-stream" });
+  if (typeof window.navigator.msSaveBlob !== "undefined") {
+    // IE workaround for "HTML7007: One or more blob URLs were
+    // revoked by closing the blob for which they were created.
+    // These URLs will no longer resolve as the data backing
+    // the URL has been freed."
+    window.navigator.msSaveBlob(blob, filename);
+  } else {
+    var blobURL =
+      window.URL && window.URL.createObjectURL
+        ? window.URL.createObjectURL(blob)
+        : window.webkitURL.createObjectURL(blob);
+    var tempLink = document.createElement("a");
+    tempLink.style.display = "none";
+    tempLink.href = blobURL;
+    tempLink.setAttribute("download", filename);
 
-        // Safari thinks _blank anchor are pop ups. We only want to set _blank
-        // target if the browser does not support the HTML5 download attribute.
-        // This allows you to download files in desktop safari if pop up blocking
-        // is enabled.
-        if (typeof tempLink.download === "undefined") {
-            tempLink.setAttribute("target", "_blank");
-        }
-
-        document.body.appendChild(tempLink);
-        tempLink.click();
-
-        // Fixes "webkit blob resource error 1"
-        setTimeout(function () {
-            document.body.removeChild(tempLink);
-            window.URL.revokeObjectURL(blobURL);
-        }, 200);
+    // Safari thinks _blank anchor are pop ups. We only want to set _blank
+    // target if the browser does not support the HTML5 download attribute.
+    // This allows you to download files in desktop safari if pop up blocking
+    // is enabled.
+    if (typeof tempLink.download === "undefined") {
+      tempLink.setAttribute("target", "_blank");
     }
+
+    document.body.appendChild(tempLink);
+    tempLink.click();
+
+    // Fixes "webkit blob resource error 1"
+    setTimeout(function () {
+      document.body.removeChild(tempLink);
+      window.URL.revokeObjectURL(blobURL);
+    }, 200);
+  }
 }
 
 // Converts IFile[] to File[]
 function convertFiles(fileAttachments: IFile[]): File[] {
-    return fileAttachments.map((fa) => {
-        // TODO: add file size
-        return new File([], fa.file_name);
-    });
+  return fileAttachments.map((fa) => {
+    // TODO: add file size
+    return new File([], fa.file_name);
+  });
 }
 
 // Gets the users JWT token from the global state
 function getUserToken() {
-    let token = null;
-    const session = globalState.session.get();
-    if (session) {
-        token = session.getAccessToken().getJwtToken();
-    }
-    return token;
+  let token = null;
+  const session = globalState.session.get();
+  if (session) {
+    token = session.getAccessToken().getJwtToken();
+  }
+  return token;
 }
 
 // TODO: add to global state like the one above.
 function getIdentityId() {
-    return Auth.currentCredentials().then((result) => {
-        return result.identityId;
-    });
+  return Auth.currentCredentials().then((result) => {
+    return result.identityId;
+  });
 }
 
 // Helper to remove empty values from an array in Typescript
 // Source: https://stackoverflow.com/questions/43118692/typescript-filter-out-nulls-from-an-array
 function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
-    if (value === null || value === undefined) return false;
-    const testDummy: TValue = value;
-    return true;
+  if (value === null || value === undefined) return false;
+  const testDummy: TValue = value;
+  return true;
 }
 
 // Converts UTC DateTime to localized date time
 function localizeDateTime(utc: string) {
-    const date = new Date(utc);
-    return date.toLocaleString(navigator.language, { timeZone: 'UTC' });
+  const date = new Date(utc);
+  return date.toLocaleString(navigator.language, { timeZone: "UTC" });
 }
 
 function errorMessage(err: any) {
-    if (typeof err === "string") {
-        return err;
-    }
-    return err.message ? err.message : JSON.stringify(err);
+  if (typeof err === "string") {
+    return err;
+  }
+  return err.message ? err.message : JSON.stringify(err);
+}
+
+// Converts the base64 uri into a file
+function dataURLtoFile(dataurl: string, filename: string) {
+  let arr = dataurl.split(",");
+  let f = arr[0];
+  if (!f) return;
+  let match = f.match(/:(.*?);/);
+  if (!match) return;
+  let mime = match[1];
+  let bstr = atob(arr[1]);
+  let n = bstr.length;
+  let u8arr = new Uint8Array(n);
+
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+
+  return new File([u8arr], filename, { type: mime });
 }
 
 export {
-    humanFileSize,
-    fileDownload,
-    convertFiles,
-    getUserToken,
-    getIdentityId,
-    notEmpty,
-    localizeDateTime,
-    errorMessage,
+  humanFileSize,
+  fileDownload,
+  convertFiles,
+  getUserToken,
+  getIdentityId,
+  notEmpty,
+  localizeDateTime,
+  errorMessage,
+  dataURLtoFile,
 };

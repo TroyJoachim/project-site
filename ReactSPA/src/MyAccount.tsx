@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container";
@@ -16,6 +16,7 @@ import { IUser } from "./types";
 import { globalState } from "./globalState";
 import Avatar from "react-avatar-edit";
 import avatar from "./images/empty-avatar-65.png";
+import { dataURLtoFile } from "./helpers";
 
 export default function MyAccount() {
   return (
@@ -60,7 +61,8 @@ function PersonalInfo() {
   useEffect(() => {
     async function getUserInfo() {
       try {
-        if (!gState.identityId.value) throw new Error("IdentityId value was missing");
+        if (!gState.identityId.value)
+          throw new Error("IdentityId value was missing");
 
         const response = await getUser(gState.identityId.value);
         if (response && response.status === 200) {
@@ -183,21 +185,33 @@ function AvatarForm() {
     error: boolean;
     message: string;
   }
+
   const gState = useHookstate(globalState);
-  const state = useHookstate({ preview: "", src: "" });
-  const loading = useHookstate(false);
-  const feedback = useHookstate<Feedback>({
+  const [state, setState] = useState({ preview: "", src: "" });
+  const [isLoading, setIsLoading] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback>({
     show: false,
     error: false,
     message: "",
   });
 
+  useEffect(() => {
+    Storage.get("user-avatar.png", {
+      level: "protected",
+      identityId: gState.identityId.value,
+    })
+      .then((url: any) => {
+        setState({ ...state, preview: url, src: url });
+      })
+      .catch((error) => console.log(error));
+  }, []);
+
   function onClose() {
-    state.preview.set(none);
+    setState({ ...state, preview: "" });
   }
 
   function onCrop(preview: string) {
-    state.preview.set(preview);
+    setState({ ...state, preview: preview });
   }
 
   function onBeforeFileLoad(elem: any) {
@@ -208,23 +222,30 @@ function AvatarForm() {
   }
 
   async function uploadAvatar() {
-    if (!state.preview.value) return;
+    if (!state.preview) return;
 
-    loading.set(true);
+    setIsLoading(true);
     try {
-      if (!gState.identityId.value) throw new Error("IdentityId value was missing");
+      if (!gState.identityId.value)
+        throw new Error("IdentityId value was missing");
+
+      const newFile = dataURLtoFile(state.preview, "user-avatar.png");
 
       // Returns: {key: user-avatar.png}
-      const result:any = await Storage.put("user-avatar.png", state.preview.value, {
+      const result: any = await Storage.put("user-avatar.png", newFile, {
         level: "protected",
         contentType: "text/plain",
       });
 
       // Update the user avatar on the API
       const id = gState.identityId.value;
-      const response = await updateUser({ identityId: id, avatarImgKey : result.key, projects: null })
+      const response = await updateUser({
+        identityId: id,
+        avatarImgKey: result.key,
+        projects: null,
+      });
 
-      feedback.set({
+      setFeedback({
         show: true,
         error: false,
         message: "Avatar has been saved!",
@@ -232,9 +253,9 @@ function AvatarForm() {
     } catch (error) {
       console.log(error);
       // TODO: Not sure if I should output the error or show my own error message
-      feedback.set({ show: true, error: true, message: error });
+      setFeedback({ show: true, error: true, message: error });
     } finally {
-      loading.set(false);
+      setIsLoading(false);
     }
   }
 
@@ -244,7 +265,7 @@ function AvatarForm() {
       <div className="my-3">
         <img
           className="avatar"
-          src={state.preview.value ? state.preview.value : avatar}
+          src={state.preview ? state.preview : avatar}
           alt="Preview"
         />
       </div>
@@ -254,10 +275,15 @@ function AvatarForm() {
         onCrop={onCrop}
         onClose={onClose}
         onBeforeFileLoad={onBeforeFileLoad}
-        src={state.src.get()}
+        src={state.src}
         exportSize={65}
       />
-      <Button variant="mint" className="mt-2" onClick={uploadAvatar}>
+      <Button
+        variant="mint"
+        className="mt-2"
+        onClick={uploadAvatar}
+        disabled={isLoading}
+      >
         Save
       </Button>
     </>
