@@ -7,7 +7,8 @@ import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Spinner from "react-bootstrap/Spinner";
 import { useHookstate, State, none } from "@hookstate/core";
-import { Auth, CognitoUser } from "@aws-amplify/auth";
+import Auth from "@aws-amplify/auth";
+import { Storage } from "aws-amplify";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { getUser, updateUser } from "./agent";
@@ -49,9 +50,8 @@ function PersonalInfo() {
     message: "",
   });
   const user = useHookstate<IUser>({
-    id: 0,
     username: "",
-    authId: "",
+    identityId: "",
     firstName: "",
     lastName: "",
     projects: null,
@@ -60,9 +60,9 @@ function PersonalInfo() {
   useEffect(() => {
     async function getUserInfo() {
       try {
-        if (!gState.sub.value) throw new Error("Sub value was missing");
+        if (!gState.identityId.value) throw new Error("IdentityId value was missing");
 
-        const response = await getUser(gState.sub.value);
+        const response = await getUser(gState.identityId.value);
         if (response && response.status === 200) {
           console.log("User response", response);
           user.set(response.data);
@@ -85,8 +85,8 @@ function PersonalInfo() {
     validateOnChange: false,
     enableReinitialize: true,
     initialValues: {
-      firstName: user.firstName.get(),
-      lastName: user.lastName.get(),
+      firstName: user.firstName.value ? user.firstName.value : "",
+      lastName: user.lastName.value ? user.lastName.value : "",
     },
     onSubmit: async (values: Values) => {
       console.log(values);
@@ -178,13 +178,25 @@ function PersonalInfo() {
 }
 
 function AvatarForm() {
-  const state = useHookstate({ preview: undefined, src: "" });
+  interface Feedback {
+    show: boolean;
+    error: boolean;
+    message: string;
+  }
+  const gState = useHookstate(globalState);
+  const state = useHookstate({ preview: "", src: "" });
+  const loading = useHookstate(false);
+  const feedback = useHookstate<Feedback>({
+    show: false,
+    error: false,
+    message: "",
+  });
 
   function onClose() {
     state.preview.set(none);
   }
 
-  function onCrop(preview: any) {
+  function onCrop(preview: string) {
     state.preview.set(preview);
   }
 
@@ -195,16 +207,49 @@ function AvatarForm() {
     }
   }
 
+  async function uploadAvatar() {
+    if (!state.preview.value) return;
+
+    loading.set(true);
+    try {
+      if (!gState.identityId.value) throw new Error("IdentityId value was missing");
+
+      // Returns: {key: user-avatar.png}
+      const result:any = await Storage.put("user-avatar.png", state.preview.value, {
+        level: "protected",
+        contentType: "text/plain",
+      });
+
+      // Update the user avatar on the API
+      const id = gState.identityId.value;
+      const response = await updateUser({ identityId: id, avatarImgKey : result.key, projects: null })
+
+      feedback.set({
+        show: true,
+        error: false,
+        message: "Avatar has been saved!",
+      });
+    } catch (error) {
+      console.log(error);
+      // TODO: Not sure if I should output the error or show my own error message
+      feedback.set({ show: true, error: true, message: error });
+    } finally {
+      loading.set(false);
+    }
+  }
+
   return (
     <>
       <h3 className="my-3">User Avatar</h3>
-      <img
-        className="avatar"
-        src={state.preview.value ? state.preview.value : avatar}
-        alt="Preview"
-      />
+      <div className="my-3">
+        <img
+          className="avatar"
+          src={state.preview.value ? state.preview.value : avatar}
+          alt="Preview"
+        />
+      </div>
       <Avatar
-        width={300}
+        width={325}
         height={200}
         onCrop={onCrop}
         onClose={onClose}
@@ -212,6 +257,9 @@ function AvatarForm() {
         src={state.src.get()}
         exportSize={65}
       />
+      <Button variant="mint" className="mt-2" onClick={uploadAvatar}>
+        Save
+      </Button>
     </>
   );
 }

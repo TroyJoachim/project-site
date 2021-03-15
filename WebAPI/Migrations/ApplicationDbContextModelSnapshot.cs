@@ -204,11 +204,14 @@ namespace WebAPI.Migrations
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
-                    b.Property<string>("AuthId")
-                        .IsRequired()
+                    b.Property<string>("AvatarImgKey")
                         .HasColumnType("text");
 
                     b.Property<string>("FirstName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IdentityId")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("LastName")

@@ -43,10 +43,10 @@ namespace WebAPI.Controllers
         //}
 
         // GET: api/Users/5
-        [HttpGet("{sub}")]
-        public async Task<ActionResult<User>> GetUser(string sub)
+        [HttpGet("{identityId}")]
+        public async Task<ActionResult<User>> GetUser(string identityId)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.AuthId == sub);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.IdentityId == identityId);
 
             if (user == null)
             {
@@ -58,15 +58,21 @@ namespace WebAPI.Controllers
 
         // PUT: api/Users/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(int id, User user)
+        [HttpPut("{identityId}")]
+        public async Task<IActionResult> PutUser(string identityId, PutUserDto user)
         {
-            if (id != user.Id)
+            if (identityId != user.IdentityId)
             {
                 return BadRequest();
             }
 
-            _context.Entry(user).State = EntityState.Modified;
+            var userToUpdate = await _context.Users.FirstOrDefaultAsync(u => u.IdentityId == identityId);
+            if (user.Username != null) userToUpdate.Username = user.Username;
+            if (user.FirstName != null) userToUpdate.FirstName = user.FirstName;
+            if (user.LastName != null) userToUpdate.LastName = user.LastName;
+            if (user.AvatarImgKey != null) userToUpdate.AvatarImgKey = user.AvatarImgKey;            
+
+            _context.Entry(userToUpdate).State = EntityState.Modified;
 
             try
             {
@@ -74,7 +80,7 @@ namespace WebAPI.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!UserExists(id))
+                if (!UserExists(identityId))
                 {
                     return NotFound();
                 }
@@ -95,7 +101,7 @@ namespace WebAPI.Controllers
             // Map UserDto to User
             var newUser = new User()
             {
-                AuthId = user.AuthId,
+                IdentityId = user.IdentityId,
                 Username = user.Username,
                 FirstName = user.FirstName,
                 LastName = user.LastName
@@ -104,7 +110,7 @@ namespace WebAPI.Controllers
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetUser", new { Id = newUser.Id }, user);
+            return CreatedAtAction("GetUser", new { IdentityId = newUser.IdentityId }, user);
         }
 
         // DELETE: api/Users/5
@@ -123,9 +129,9 @@ namespace WebAPI.Controllers
             return NoContent();
         }
 
-        private bool UserExists(int id)
+        private bool UserExists(string identityId)
         {
-            return _context.Users.Any(e => e.Id == id);
+            return _context.Users.Any(e => e.IdentityId == identityId);
         }
     }
 }

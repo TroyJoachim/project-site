@@ -17,6 +17,7 @@ import {
   Route,
   Redirect,
 } from "react-router-dom";
+import { RecoilRoot } from "recoil";
 
 function ProtectedRoute(props: {
   path: string;
@@ -40,49 +41,57 @@ function App() {
   // Wait for the authentication api to return before loading
   if (!gState.isAuthenticating.get()) {
     return (
-      <Router>
-        <TopNav />
-        <main className="flex-shrink-0">
-          <Switch>
-            <Route exact path="/">
-              <Home />
-            </Route>
+      <RecoilRoot>
+        <Router>
+          <TopNav />
+          <main className="flex-shrink-0">
+            <Switch>
+              <Route exact path="/">
+                <Home />
+              </Route>
 
-            <Route path="/project/:id" component={Project} />
+              <Route path="/project/:id" component={Project} />
 
-            <Route exact path="/test-page">
-              <TestPage />
-            </Route>
+              <Route exact path="/test-page">
+                <TestPage />
+              </Route>
 
-            <Route
-              path={[
-                "/sign-in",
-                "/create-account",
-                "/confirm-account",
-                "/forgot-password",
-                "/new-password",
-              ]}
-            >
-              <Authentication />
-            </Route>
+              <Route
+                path={[
+                  "/sign-in",
+                  "/create-account",
+                  "/confirm-account",
+                  "/forgot-password",
+                  "/new-password",
+                ]}
+              >
+                <Authentication />
+              </Route>
 
-            <ProtectedRoute path="/create-project" component={CreateProject} />
+              <ProtectedRoute
+                path="/create-project"
+                component={CreateProject}
+              />
 
-            <ProtectedRoute path="/edit-project/:id" component={EditProject} />
+              <ProtectedRoute
+                path="/edit-project/:id"
+                component={EditProject}
+              />
 
-            <ProtectedRoute
-              path="/dashboard/:username"
-              component={UserDashboard}
-            />
+              <ProtectedRoute
+                path="/dashboard/:username"
+                component={UserDashboard}
+              />
 
-            <ProtectedRoute
-              path="/my-account/:username"
-              component={MyAccount}
-            />
-          </Switch>
-        </main>
-        <Footer />
-      </Router>
+              <ProtectedRoute
+                path="/my-account/:username"
+                component={MyAccount}
+              />
+            </Switch>
+          </main>
+          <Footer />
+        </Router>
+      </RecoilRoot>
     );
   } else {
     return (

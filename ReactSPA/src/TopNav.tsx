@@ -14,11 +14,11 @@ function TopNav() {
   const gState = useHookstate(globalState);
 
   useEffect(() => {
-    getProjectCategories().then((response) => {
-      if (response && response.status === 200) {
-        categories.set(response.data);
-      }
-    });
+    // getProjectCategories().then((response) => {
+    //   if (response && response.status === 200) {
+    //     categories.set(response.data);
+    //   }
+    // });
   }, []); // Note: Empty array at the end ensures that this is only performed once during mount
 
   function buildCategoryDropdown() {

@@ -1,3 +1,5 @@
+import { CognitoUser } from "@aws-amplify/auth";
+
 export interface ITempBuildStep {
   order: number;
   name: string;
@@ -158,11 +160,11 @@ export interface ICategoryResponse {
 }
 
 export interface IUser {
-  id: number;
-  username: string;
-  authId: string;
-  firstName: string;
-  lastName: string;
+  username?: string;
+  identityId: string;
+  firstName?: string;
+  lastName?: string;
+  avatarImgKey?: string;
   projects: string[] | null;
 }
 
@@ -173,7 +175,7 @@ export enum LoadingState {
 }
 
 export interface ICreateUser {
-  authId: string;
+  identityId: string;
   username: string;
   avatarPath: string;
   firstName: string;
@@ -181,11 +183,22 @@ export interface ICreateUser {
 }
 
 export interface IAxiosResponse {
-    status: number;
-    data: IUser | ICreateUser
+  status: number;
+  data: IUser | ICreateUser;
 }
 
 export interface IUpdateUserResponse {
-    status: number;
-    data: IUser;
+  status: number;
+  data: IUser;
+}
+
+export interface LoginState {
+  user: CognitoUser | any;
+  username: string | null;
+  cache: string | null;
+}
+
+export interface ForgotPasswordState {
+  sent: boolean;
+  username: string;
 }

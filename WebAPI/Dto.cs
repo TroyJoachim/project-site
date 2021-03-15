@@ -57,10 +57,21 @@ namespace WebAPI.Dto
     public class UserDto
     {
         [Required]
-        public string AuthId { get; set; }
+        public string IdentityId { get; set; }
         [Required]
         public string Username { get; set; }
         public string AvatarPath { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+
+    }
+
+    public class PutUserDto
+    {
+        [Required]
+        public string IdentityId { get; set; }
+        public string Username { get; set; }
+        public string AvatarImgKey { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
 

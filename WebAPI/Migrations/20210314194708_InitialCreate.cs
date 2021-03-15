@@ -34,10 +34,11 @@ namespace WebAPI.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    AuthId = table.Column<string>(type: "text", nullable: false),
+                    IdentityId = table.Column<string>(type: "text", nullable: false),
                     Username = table.Column<string>(type: "text", nullable: false),
                     FirstName = table.Column<string>(type: "text", nullable: true),
-                    LastName = table.Column<string>(type: "text", nullable: true)
+                    LastName = table.Column<string>(type: "text", nullable: true),
+                    AvatarImgKey = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {

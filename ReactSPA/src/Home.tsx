@@ -15,20 +15,20 @@ import { Storage } from "aws-amplify";
 function Home() {
     const projects = useHookstate<IHomeProject[]>([]);
     useEffect(() => {
-        getProjects().then((response) => {
-            if (response && response.status === 200) {
-                const projectsResp = response.data.map((project) => {
-                    return {
-                        id: project.id,
-                        name: project.name,
-                        sub_category: project.sub_category,
-                        images: project.images,
-                        image: "",
-                    };
-                });
-                projects.set(projectsResp);
-            }
-        });
+        // getProjects().then((response) => {
+        //     if (response && response.status === 200) {
+        //         const projectsResp = response.data.map((project) => {
+        //             return {
+        //                 id: project.id,
+        //                 name: project.name,
+        //                 sub_category: project.sub_category,
+        //                 images: project.images,
+        //                 image: "",
+        //             };
+        //         });
+        //         projects.set(projectsResp);
+        //     }
+        // });
     }, []); // Note: Empty array at the end ensures that this is only performed once during mount
 
     function projectList() {

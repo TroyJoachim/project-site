@@ -115,11 +115,12 @@ namespace WebAPI.Models
     {
         public int Id { get; set; }
         [Required]
-        public string AuthId { get; set; }
+        public string IdentityId { get; set; }
         [Required]
         public string Username { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public string AvatarImgKey { get; set; }
 
         public ICollection<Project> Projects { get; set; }
     }

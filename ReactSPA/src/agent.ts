@@ -341,7 +341,7 @@ async function createUser(id: string, username: string) {
   try {
     // Create a user opject to send to the api
     const newUser = {
-      authId: id,
+      identityId: id,
       username: username,
     };
 
@@ -353,8 +353,8 @@ async function createUser(id: string, username: string) {
       // Manually map the response to a Typescript interface.
       transformResponse: [
         (response: any) => {
-          const createUserResponse: ICreateUser = JSON.parse(response);
-          return createUserResponse;
+          const resp: IAxiosResponse = JSON.parse(response);
+          return resp;
         },
       ],
     });
@@ -369,7 +369,7 @@ async function updateUser(user: IUser) {
   console.log(user);
   try {
     const response = await http.put(
-      "/api/users/" + user.id,
+      "/api/users/" + user.identityId,
       JSON.stringify(user),
       {
         headers: {

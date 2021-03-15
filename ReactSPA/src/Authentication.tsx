@@ -1,4 +1,4 @@
-import React, { MouseEvent, useRef } from "react";
+import React, { MouseEvent, useRef, useState } from "react";
 import { Auth, CognitoUser } from "@aws-amplify/auth";
 import Amplify from "aws-amplify";
 import { useHistory } from "react-router-dom";
@@ -10,55 +10,47 @@ import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
-import { useHookstate, State, none } from "@hookstate/core";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { Switch, Route, Link } from "react-router-dom";
 import { errorMessage } from "./helpers";
 import { createUser } from "./agent";
+import { LoginState, ForgotPasswordState } from "./types";
+import { authState, forgotPasswordState} from "./state";
+import { refreshAuthenticatedUser } from "./globalState";
+import {
+  RecoilRoot,
+  atom,
+  selector,
+  useRecoilState,
+  useRecoilValue,
+} from "recoil";
 
 Amplify.configure(awsconfig);
 
-interface LoginState {
-  user: CognitoUser | any;
-  username: string | null;
-  cache: string | null;
-}
-
-interface ForgotPasswordState {
-  sent: boolean;
-  username: string;
-}
-
 function Authentication() {
-  const state = useHookstate<LoginState>({
-    user: null,
-    username: null,
-    cache: null,
-  });
-
   return (
     <Container style={{ maxWidth: "700px" }}>
       <Row>
         <Col>
           <Switch>
             <Route path="/sign-in">
-              <SignIn state={state} />
+              <SignIn />
             </Route>
             <Route path="/create-account">
-              <SignUp state={state} />
+              <SignUp />
             </Route>
             <Route path="/confirm-account">
-              <ConfirmSignUp state={state} />
+              <ConfirmSignUp />
             </Route>
             <Route path="/forgot-password">
               <ForgotPassword />
             </Route>
             <Route path="/new-password">
-              <RequireNewPassword user={state.user.get()} />
+              <RequireNewPassword />
             </Route>
             <Route path="/confirm-sign-in">
-              <ConfirmSignIn user={state.user.get()} />
+              <ConfirmSignIn />
             </Route>
           </Switch>
         </Col>
@@ -67,10 +59,11 @@ function Authentication() {
   );
 }
 
-function SignIn(props: { state: State<LoginState> }) {
+function SignIn() {
   const history = useHistory();
-  const loadingState = useHookstate<boolean>(false);
-  const errorMsg = useHookstate<string>("");
+  const [state, setState] = useRecoilState<LoginState>(authState);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string>("");
   interface Values {
     username: string;
     password: string;
@@ -89,8 +82,8 @@ function SignIn(props: { state: State<LoginState> }) {
     },
     onSubmit: async (values: Values) => {
       console.log(values);
-      errorMsg.set(""); // Clear Alert
-      loadingState.set(true);
+      setErrorMsg(""); // Clear Alert
+      setIsLoading(true);
       try {
         const user = await Auth.signIn(values.username, values.password);
         console.log(user);
@@ -99,11 +92,11 @@ function SignIn(props: { state: State<LoginState> }) {
           user.challengeName === "SOFTWARE_TOKEN_MFA"
         ) {
           console.log("confirm user with " + user.challengeName);
-          props.state.user.set(user);
+          state.user.set(user);
           history.replace("/confirm-sign-in");
         } else if (user.challengeName === "NEW_PASSWORD_REQUIRED") {
           console.log("require new password", user.challengeParam);
-          props.state.user.set(user);
+          state.user.set(user);
           history.push("/new-password");
         } else {
           //this.checkContact(user);
@@ -113,18 +106,18 @@ function SignIn(props: { state: State<LoginState> }) {
       } catch (err) {
         if (err.code === "UserNotConfirmedException") {
           console.log("the user is not confirmed");
-          props.state.username.set(values.username);
+          setState({ ...state, username: values.username });
           history.push("confirm-account");
         } else if (err.code === "PasswordResetRequiredException") {
           console.log("the user requires a new password");
-          props.state.username.set(values.username);
+          setState({ ...state, username: values.username });
           history.push("/forgot-password");
         } else {
-          errorMsg.set(errorMessage(err));
+          setErrorMsg(errorMessage(err));
           console.log(err);
         }
       } finally {
-        loadingState.set(false);
+        setIsLoading(false);
       }
     },
   });
@@ -132,11 +125,7 @@ function SignIn(props: { state: State<LoginState> }) {
   return (
     <>
       <h2 className="my-4">Sign In</h2>
-      {errorMsg.get() ? (
-        <Alert variant="danger">{errorMsg.get()}</Alert>
-      ) : (
-        <></>
-      )}
+      {errorMsg ? <Alert variant="danger">{errorMsg}</Alert> : <></>}
       <Card>
         <Card.Body>
           <Form noValidate onSubmit={formik.handleSubmit}>
@@ -178,7 +167,7 @@ function SignIn(props: { state: State<LoginState> }) {
               variant="mint"
               type="submit"
               className="float-right"
-              disabled={loadingState.get()}
+              disabled={isLoading}
             >
               SIGN IN
             </Button>
@@ -192,10 +181,11 @@ function SignIn(props: { state: State<LoginState> }) {
   );
 }
 
-function SignUp(props: { state: State<LoginState> }) {
+function SignUp() {
   const history = useHistory();
-  const loadingState = useHookstate(false);
-  const errorMsg = useHookstate<string>("");
+  const [state, setState] = useRecoilState<LoginState>(authState);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string>("");
   interface Values {
     username: string;
     password: string;
@@ -223,24 +213,27 @@ function SignUp(props: { state: State<LoginState> }) {
     },
     onSubmit: async (values: Values) => {
       console.log(values);
-      errorMsg.set("");
-      loadingState.set(true);
+      setErrorMsg("");
+      setIsLoading(true);
       try {
-        props.state.cache.set(values.password);
+        setState({ ...state, cache: values.password });
         const data = await Auth.signUp({
           username: values.username,
           password: values.password,
           attributes: { email: values.email },
         });
 
-        //this.changeState("confirmSignUp", data.user.username);
-        props.state.username.set(data.user.getUsername());
+        setState({
+          ...state,
+          username: data.user.getUsername(),
+          cache: values.password,
+        });
         history.push("/confirm-account");
       } catch (err) {
-        errorMsg.set(errorMessage(err));
+        setErrorMsg(errorMessage(err));
         console.log(err);
       } finally {
-        loadingState.set(false);
+        setIsLoading(false);
       }
     },
   });
@@ -248,11 +241,7 @@ function SignUp(props: { state: State<LoginState> }) {
   return (
     <>
       <h2 className="my-4">Create Account</h2>
-      {errorMsg.get() ? (
-        <Alert variant="danger">{errorMsg.get()}</Alert>
-      ) : (
-        <></>
-      )}
+      {errorMsg ? <Alert variant="danger">{errorMsg}</Alert> : <></>}
       <Card>
         <Card.Body>
           <Form noValidate onSubmit={formik.handleSubmit}>
@@ -302,7 +291,7 @@ function SignUp(props: { state: State<LoginState> }) {
               variant="mint"
               type="submit"
               className="float-right"
-              disabled={loadingState.get()}
+              disabled={isLoading}
             >
               CREATE ACCOUNT
             </Button>
@@ -316,10 +305,11 @@ function SignUp(props: { state: State<LoginState> }) {
   );
 }
 
-function ConfirmSignUp(props: { state: State<LoginState> }) {
+function ConfirmSignUp() {
   const history = useHistory();
+  const [state, setState] = useRecoilState<LoginState>(authState);
   const inputField = useRef<HTMLInputElement>(null);
-  const loadingState = useHookstate(false);
+  const [isLoading, setIsLoading] = useState(false);
   interface Values {
     username: string;
     code: string;
@@ -334,35 +324,33 @@ function ConfirmSignUp(props: { state: State<LoginState> }) {
     validateOnChange: false,
     enableReinitialize: true,
     initialValues: {
-      username: props.state.username.value ? props.state.username.value : "",
+      username: state.username ? state.username : "",
       code: "",
     },
     onSubmit: async (values: Values) => {
       console.log(values);
-      loadingState.set(true);
+      console.log(state);
+      setIsLoading(true);
       try {
         await Auth.confirmSignUp(values.username, values.code);
-        const username = props.state.username.value;
-        const cache = props.state.cache.value;
-        if (username && cache) {
-          const user = await Auth.signIn(username, cache);
-          props.state.cache.set(none);
-          // TODO: Add the new user account to the API
-          const attributes = await Auth.userAttributes(user);
-          const subResult = attributes.find((a) => a.Name === "sub");
-          if (!subResult) return;
+        const cache = state.cache;
+        if (cache) {
+          await Auth.signIn(values.username, cache);
+          setState({ ...state, cache: null });
 
-          const sub = subResult.getValue();
-          await createUser(sub, username);
+          refreshAuthenticatedUser();
 
-          // TODO: Route the user to the account setup page
-          history.replace("/");
+          // Get the aws identityId of the user
+          const credentials = await Auth.currentUserCredentials();
+
+          // Add the new user account to the API
+          await createUser(credentials.identityId, values.username);
         }
       } catch (err) {
         console.log(err);
-        history.replace("/");
       } finally {
-        loadingState.set(false);
+        setIsLoading(false);
+        history.replace("/");
       }
     },
   });
@@ -371,14 +359,14 @@ function ConfirmSignUp(props: { state: State<LoginState> }) {
     event.preventDefault();
     if (inputField.current) {
       if (inputField.current.value) {
-        loadingState.set(true);
-        const username = props.state.username.value
-          ? props.state.username.value
+        setIsLoading(true);
+        const username = state.username
+          ? state.username
           : inputField.current.value;
         Auth.resendSignUp(username)
           .then(() => console.log("code resent"))
           .catch((err) => console.log(err))
-          .finally(() => loadingState.set(false));
+          .finally(() => setIsLoading(false));
       } else {
         formik.setFieldError("username", "Username is required");
       }
@@ -397,7 +385,7 @@ function ConfirmSignUp(props: { state: State<LoginState> }) {
                 type="text"
                 placeholder="Enter your username"
                 ref={inputField}
-                disabled={props.state.username.value ? true : false}
+                disabled={state.username ? true : false}
                 onChange={formik.handleChange}
                 value={formik.values.username}
                 isInvalid={!!formik.errors.username}
@@ -435,7 +423,7 @@ function ConfirmSignUp(props: { state: State<LoginState> }) {
               variant="mint"
               type="submit"
               className="float-right"
-              disabled={loadingState.get()}
+              disabled={isLoading}
             >
               CONFIRM
             </Button>
@@ -449,8 +437,9 @@ function ConfirmSignUp(props: { state: State<LoginState> }) {
   );
 }
 
-function SendCode(props: { state: State<ForgotPasswordState> }) {
-  const loadingState = useHookstate<boolean>(false);
+function SendCode() {
+  const [state, setState] = useRecoilState(forgotPasswordState);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   interface Values {
     username: string;
   }
@@ -466,14 +455,14 @@ function SendCode(props: { state: State<ForgotPasswordState> }) {
     },
     onSubmit: (values: Values) => {
       console.log(values);
-      loadingState.set(true);
-      props.state.set({ sent: true, username: values.username });
+      setIsLoading(true);
+      setState({ sent: true, username: values.username });
       Auth.forgotPassword(values.username)
         .then((data) => {
           console.log(data);
         })
         .catch((err) => console.log(err))
-        .finally(() => loadingState.set(false));
+        .finally(() => setIsLoading(false));
     },
   });
 
@@ -497,7 +486,7 @@ function SendCode(props: { state: State<ForgotPasswordState> }) {
         variant="mint"
         type="submit"
         className="float-right"
-        disabled={loadingState.get()}
+        disabled={isLoading}
       >
         SEND CODE
       </Button>
@@ -505,8 +494,9 @@ function SendCode(props: { state: State<ForgotPasswordState> }) {
   );
 }
 
-function UpdatePassword(props: { state: State<ForgotPasswordState> }) {
-  const loadingState = useHookstate<boolean>(false);
+function UpdatePassword() {
+  const state = useRecoilValue<ForgotPasswordState>(forgotPasswordState);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const history = useHistory();
   interface Values {
     code: string;
@@ -533,21 +523,17 @@ function UpdatePassword(props: { state: State<ForgotPasswordState> }) {
     },
     onSubmit: (values: Values) => {
       console.log(values);
-      loadingState.set(true);
-      Auth.forgotPasswordSubmit(
-        props.state.username.value,
-        values.code,
-        values.password
-      )
+      setIsLoading(true);
+      Auth.forgotPasswordSubmit(state.username, values.code, values.password)
         .then((data) => {
           console.log(data);
           // Sign the user in
-          Auth.signIn(props.state.username.value, values.password)
+          Auth.signIn(state.username, values.password)
             .then(() => history.push("/"))
             .catch((err) => console.log(err));
         })
         .catch((err) => console.log(err))
-        .finally(() => loadingState.set(false));
+        .finally(() => setIsLoading(false));
     },
   });
 
@@ -588,7 +574,7 @@ function UpdatePassword(props: { state: State<ForgotPasswordState> }) {
           variant="mint"
           type="submit"
           className="float-right"
-          disabled={loadingState.get()}
+          disabled={isLoading}
         >
           UPDATE
         </Button>
@@ -598,19 +584,16 @@ function UpdatePassword(props: { state: State<ForgotPasswordState> }) {
 }
 
 function ForgotPassword() {
-  const state = useHookstate<ForgotPasswordState>({
-    sent: false,
-    username: "",
-  });
+  const [state, setState] = useRecoilState<ForgotPasswordState>(forgotPasswordState);
   return (
     <>
       <h2 className="my-4">Forgot Password</h2>
       <Card>
         <Card.Body>
-          {state.sent.value ? (
-            <UpdatePassword state={state} />
+          {state.sent ? (
+            <UpdatePassword />
           ) : (
-            <SendCode state={state} />
+            <SendCode />
           )}
         </Card.Body>
       </Card>
@@ -621,7 +604,7 @@ function ForgotPassword() {
   );
 }
 
-function RequireNewPassword(props: { user: any }) {
+function RequireNewPassword() {
   interface Values {
     password: string;
   }
@@ -680,7 +663,7 @@ function RequireNewPassword(props: { user: any }) {
   );
 }
 
-function ConfirmSignIn(props: { user: any }) {
+function ConfirmSignIn() {
   interface Values {
     code: string;
   }

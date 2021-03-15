@@ -49,7 +49,7 @@ namespace WebAPI.Controllers
                 // Map the User
                 var userDto = new UserDto()
                 {
-                    AuthId = project.User.AuthId, // TODO: check if I need to send this
+                    IdentityId = project.User.IdentityId, // TODO: check if I need to send this
                     Username = project.User.Username
                 };
 
@@ -81,7 +81,7 @@ namespace WebAPI.Controllers
             var userDto = new UserDto()
             {
                 //Id = project.User.Id,
-                AuthId = project.User.AuthId, // TODO: check this
+                IdentityId = project.User.IdentityId, // TODO: check this
                 Username = project.User.Username,
                 AvatarPath = "TODO"
             };
