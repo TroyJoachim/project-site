@@ -5,6 +5,7 @@ import { uuid } from "uuidv4";
 import {
   ITempProject,
   ITempBuildStep,
+  IImage,
   Image,
   ICategory,
   IGetProjectResponse,
@@ -17,6 +18,8 @@ import {
   IUser,
   IAxiosResponse,
   IUpdateUserResponse,
+  IProject,
+  IBuildStep,
 } from "./types";
 
 // Configure the global level for aws storage.
@@ -77,7 +80,7 @@ function getProject(id: string) {
     });
 }
 
-async function createProject(project: ITempProject, subcategoryId: string) {
+async function createProject(project: IProject, subcategoryId: string) {
   console.log(project);
 
   // S3 file uploads
@@ -132,24 +135,24 @@ async function createProject(project: ITempProject, subcategoryId: string) {
     return JSON.stringify(obj);
   };
 
-  async function convertBuildStep(step: ITempBuildStep) {
+  async function convertBuildStep(step: IBuildStep) {
     // upload build step files to the server
-    const promiseFileArr = step.files.map(async (file: File) => {
-      const response: AxiosResponse = await uploadFiles(
-        "/api/attachment_files",
-        file
-      );
-      return response.data.file_attachment_id;
-    });
+    // const promiseFileArr = step.files.map(async (file: File) => {
+    //   const response: AxiosResponse = await uploadFiles(
+    //     "/api/attachment_files",
+    //     file
+    //   );
+    //   return response.data.file_attachment_id;
+    // });
 
     // Upload build step images to the server
-    const promiseImageArr = step.images.map(async (file: Image) => {
-      const response: AxiosResponse = await uploadFiles(
-        "/api/images",
-        file.content
-      );
-      return response.data.image_id;
-    });
+    // const promiseImageArr = step.uploadedImages.map(async (file: Image) => {
+    //   const response: AxiosResponse = await uploadFiles(
+    //     "/api/images",
+    //     file.content
+    //   );
+    //   return response.data.image_id;
+    // });
 
     // S3 file uploading
     // const promiseS3ImageUploadArr = step.images.map(async (file: Image) => {
@@ -161,8 +164,8 @@ async function createProject(project: ITempProject, subcategoryId: string) {
     // });
 
     // When all the Promises have been resolved
-    const bsImageIds = await Promise.all(promiseImageArr);
-    const bsfileAttachmentIds = await Promise.all(promiseFileArr);
+    //const bsImageIds = await Promise.all(promiseImageArr);
+    //const bsfileAttachmentIds = await Promise.all(promiseFileArr);
 
     // S3 file uploads
     // const bsImageKeys = await Promise.all(promiseS3ImageUploadArr);
@@ -173,10 +176,10 @@ async function createProject(project: ITempProject, subcategoryId: string) {
 
     // Return the build step
     return {
-      name: step.name,
+      title: step.title,
       description: step.description,
-      image_ids: bsImageIds,
-      file_attachment_ids: bsfileAttachmentIds,
+      images: [],
+      files: [],
     };
   }
 
@@ -193,23 +196,23 @@ async function createProject(project: ITempProject, subcategoryId: string) {
     });
   }
 
-  const bsPromiseArr = project.build_steps.map(convertBuildStep);
+  const bsPromiseArr = project.buildSteps.map(convertBuildStep);
   const projectPromise = Promise.all(bsPromiseArr).then(async (result) => {
-    const promiseFileArr = project.files.map(async (file: File) => {
-      const response: AxiosResponse = await uploadFiles(
-        "/api/attachment_files",
-        file
-      );
-      return response.data.file_attachment_id;
-    });
+    // const promiseFileArr = project.uploadedFiles.map(async (file: File) => {
+    //   const response: AxiosResponse = await uploadFiles(
+    //     "/api/attachment_files",
+    //     file
+    //   );
+    //   return response.data.file_attachment_id;
+    // });
 
-    const promiseImageArr = project.images.map(async (file: Image) => {
-      const response: AxiosResponse = await uploadFiles(
-        "/api/images",
-        file.content
-      );
-      return response.data.image_id;
-    });
+    // const promiseImageArr = project.uploadedImages.map(async (file: Image) => {
+    //   const response: AxiosResponse = await uploadFiles(
+    //     "/api/images",
+    //     file.content
+    //   );
+    //   return response.data.image_id;
+    // });
 
     // const promiseS3ImageUploadArr = project.images.map(
     //     async (file: Image) => {
@@ -221,20 +224,21 @@ async function createProject(project: ITempProject, subcategoryId: string) {
     //     return await uploadFileToS3(file);
     // });
 
-    const projectImageIds = await Promise.all(promiseImageArr);
-    const projectFileAttachmentIds = await Promise.all(promiseFileArr);
+    //const projectImageIds = await Promise.all(promiseImageArr);
+    //const projectFileAttachmentIds = await Promise.all(promiseFileArr);
 
     // S3 file uploads
     // const projectImageKeys = await Promise.all(promiseS3ImageUploadArr);
     // const projectFileKeys = await Promise.all(promiseS3FileUploadArr);
 
     return {
-      name: project.name,
+      title: project.title,
       description: project.description,
-      subcategory_id: subcategoryId,
-      image_ids: projectImageIds,
-      build_steps: result,
-      file_attachment_ids: projectFileAttachmentIds,
+      categoryId: subcategoryId,
+      userId: 0,
+      buildSteps: result,
+      images: [],
+      files: [],
     };
   });
 

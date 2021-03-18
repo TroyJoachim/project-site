@@ -18,6 +18,8 @@ namespace WebAPI.Dto
         public string FileName { get; set; }
         [Required]
         public string Path { get; set; }
+        [Required]
+        public string IdentityId { get; set; }
         public int Size { get; set; }
     }
 
@@ -27,6 +29,8 @@ namespace WebAPI.Dto
         public string FileName { get; set; }
         [Required]
         public string Path { get; set; }
+        [Required]
+        public string IdentityId { get; set; }
         public int Size { get; set; }
     }
 
@@ -89,8 +93,10 @@ namespace WebAPI.Dto
         public string Title { get; set; }
         public string Description { get; set; }
         public string Category { get; set; }
+        public int? CategoryId { get; set; }
         public UserDto User { get; set; }
         public List<FileDto> Files { get; set; }
         public List<ImageDto> Images { get; set; }
+        public List<BuildStepDto> BuildSteps { get; set; }
     }
 }

@@ -85,7 +85,7 @@ function fileDownload(
 function convertFiles(fileAttachments: IFile[]): File[] {
   return fileAttachments.map((fa) => {
     // TODO: add file size
-    return new File([], fa.file_name);
+    return new File([], fa.fileName);
   });
 }
 

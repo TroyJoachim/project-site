@@ -6,7 +6,7 @@ import Nav from "react-bootstrap/Nav";
 import NavDropdown from "react-bootstrap/NavDropdown";
 import Form from "react-bootstrap/Form";
 import { getProjectCategories } from "./agent";
-import { ICategory, ISubcategory } from "./types";
+import { ICategory } from "./types";
 import { globalState, signOut } from "./globalState";
 
 function TopNav() {
@@ -22,7 +22,7 @@ function TopNav() {
   }, []); // Note: Empty array at the end ensures that this is only performed once during mount
 
   function buildCategoryDropdown() {
-    function mapSubcategories(subcats: ISubcategory[]) {
+    function mapSubcategories(subcats: ICategory[]) {
       return subcats.map((sc, i) => (
         <NavDropdown.Item key={sc.name + i.toString()}>
           {sc.name}

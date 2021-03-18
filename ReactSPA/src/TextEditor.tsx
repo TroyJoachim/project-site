@@ -1,12 +1,12 @@
 import React from "react";
-import { useHookstate, StateMethods, Downgraded } from "@hookstate/core";
+import { useHookstate, State, StateMethods, Downgraded } from "@hookstate/core";
 import { Editor } from "react-draft-wysiwyg";
 import { EditorState, convertToRaw } from "draft-js";
 import "../node_modules/react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 
 interface ITextEditor {
     description: StateMethods<string>;
-    editorState: StateMethods<EditorState>;
+    editorState: State<EditorState>;
     validated: boolean;
     hasText: (value: boolean) => void;
 }
@@ -14,13 +14,14 @@ function TextEditor(props: ITextEditor) {
     // scoped state is optional for performance
     // could have used props.state everywhere instead
     const description = useHookstate(props.description);
+    const editorState = useHookstate(props.editorState);
 
     // Downgrade the Project files property
     // https://hookstate.js.org/docs/performance-managed-rendering#downgraded-plugin
-    props.editorState.attach(Downgraded);
+    editorState.attach(Downgraded);
 
     const onEditorStateChange = (newEditorState: any) => {
-        props.editorState.set(newEditorState);
+        editorState.set(newEditorState);
         const contentState = newEditorState.getCurrentContent();
         props.hasText(contentState.hasText());
 
@@ -33,7 +34,7 @@ function TextEditor(props: ITextEditor) {
     // Checks if the form validation is needed and description text has been entered.
     const invalidDesc =
         props.validated === true &&
-        !props.editorState.get().getCurrentContent().hasText();
+        !editorState.get().getCurrentContent().hasText();
     function feedback() {
         if (invalidDesc) {
             return (
@@ -49,7 +50,7 @@ function TextEditor(props: ITextEditor) {
     return (
         <>
             <Editor
-                editorState={props.editorState.get()}
+                editorState={editorState.get()}
                 toolbarStyle={{
                     border: "none",
                     borderBottom: "1px solid #dee2e6",

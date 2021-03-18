@@ -4,7 +4,7 @@ export interface ITempBuildStep {
   order: number;
   name: string;
   description: string;
-  images: Image[];
+  images: IImage[];
   files: File[];
 }
 
@@ -15,7 +15,20 @@ export interface ITempProject {
   subcategory_id: string;
   subcategory: string; // Temporary, need to update api to subcategory_id
   build_steps: ITempBuildStep[];
-  images: Image[];
+  images: IImage[];
+  files: File[];
+}
+
+export interface IEditProjectModel {
+  id: string;
+  name: string;
+  description: string;
+  subcategory_id: string;
+  subcategory: string; // Temporary, need to update api to subcategory_id
+  creation_datetime: string;
+  image_ids: string[];
+  images: IImage[];
+  build_steps: IEditProjectBuildStepModel[];
   files: File[];
 }
 
@@ -27,49 +40,53 @@ export interface IHomeProject {
   image: string;
 }
 
+export interface IProject {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  categoryId: number;
+  buildSteps: IBuildStep[];
+  images: IImage[];
+  uploadedImages: Image[];
+  files: IFile[];
+  uploadedFiles: File[];
+  user: IUser;
+}
+
+export interface IImage {
+  fileName: string;
+  identityId: string;
+  path: string;
+  size: number;
+}
+
 export interface Image {
   id: string;
   content: File;
 }
 
 export interface IFile {
-  id: string;
-  file_name: string;
-  link: string;
-}
-
-export interface IProject {
-  id: string;
-  name: string;
-  description: string;
-  subcategory_id: string;
-  subcategory: string; // Temporary, need to update api to subcategory_id
-  build_steps: IBuildStep[];
-  image_ids: string[];
-  images: Image[];
-  file_attachments: IFile[];
-  files: File[];
+  fileName: string;
+  identityId: string;
+  path: string;
+  size: number;
 }
 
 export interface IBuildStep {
   order: number;
-  name: string;
+  title: string;
   description: string;
-  image_ids: string[];
-  images: Image[];
-  file_attachments: IFile[];
+  images: IImage[];
+  uploadedImages: Image[];
   files: File[];
-}
-
-export interface ISubcategory {
-  id: string;
-  name: string;
+  uploadedFiles: File[];
 }
 
 export interface ICategory {
   id: string;
-  name: string;
-  subcategories: ISubcategory[];
+  name: string; 
+  subcategories: ICategory[];
 }
 
 export interface IBuildStepResponse {
@@ -106,7 +123,7 @@ export interface IEditProjectBuildStepModel {
   name: string;
   description: string;
   image_ids: string[];
-  images: Image[];
+  images: IImage[];
   files: File[];
 }
 
@@ -118,7 +135,7 @@ export interface IEditProjectModel {
   subcategory: string; // Temporary, need to update api to subcategory_id
   creation_datetime: string;
   image_ids: string[];
-  images: Image[];
+  images: IImage[];
   build_steps: IEditProjectBuildStepModel[];
   files: File[];
 }

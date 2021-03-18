@@ -25,6 +25,15 @@ namespace WebAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GetProjectsDto>>> GetProjects()
         {
+            try
+            {
+
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
             var projectsDto = new List<GetProjectsDto>();
 
             // Get projects from the database
@@ -70,65 +79,59 @@ namespace WebAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<GetProjectDto>> GetProject(int id)
         {
-            var project = await _context.Projects
+            try
+            {
+                var project = await _context.Projects
                 .Include(p => p.Category)
                 .Include(p => p.User)
                 .Include(p => p.Images)
                 .Include(p => p.Files)
+                .Include(p => p.BuildSteps)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
-            // Map User to UserDto
-            var userDto = new UserDto()
-            {
-                //Id = project.User.Id,
-                IdentityId = project.User.IdentityId, // TODO: check this
-                Username = project.User.Username,
-                AvatarPath = "TODO"
-            };
-
-            // Map Image to ImageDto
-            var imageDtoList = new List<ImageDto>();
-            foreach (var image in project.Images)
-            {
-                var imageDto = new ImageDto()
+                // Map User to UserDto
+                var userDto = new UserDto()
                 {
-                    FileName = image.FileName,
-                    Path = image.Path,
-                    Size = image.Size
+                    //Id = project.User.Id,
+                    IdentityId = project.User.IdentityId, // TODO: check this
+                    Username = project.User.Username,
+                    AvatarPath = "TODO"
                 };
-                imageDtoList.Add(imageDto);
-            }
 
-            // Map File to FileDto
-            var fileDtoList = new List<FileDto>();
-            foreach (var file in project.Files)
-            {
-                var fileDto = new FileDto()
+                var buildStepList = new List<BuildStepDto>();
+                foreach (var buildStep in project.BuildSteps)
                 {
-                    FileName = file.FileName,
-                    Path = file.Path,
-                    Size = file.Size
+                    var buildStepDto = new BuildStepDto()
+                    {
+                        Title = buildStep.Title,
+                        Description = buildStep.Description,
+                        Images = MapImageDtos(buildStep.Images, project.User.IdentityId),
+                        Files = MapFileDtos(buildStep.Files, project.User.IdentityId),
+                    };
+                }
+
+                // Map Project to GetProjectDto
+                var getProjectDto = new GetProjectDto()
+                {
+                    Title = project.Title,
+                    Description = project.Description,
+                    Category = project.Category.Name,
+                    User = userDto,
+                    Images = MapImageDtos(project.Images, project.User.IdentityId),
+                    Files = MapFileDtos(project.Files, project.User.IdentityId),
                 };
-                fileDtoList.Add(fileDto);
+
+                if (project == null)
+                {
+                    return NotFound();
+                }
+
+                return getProjectDto;
             }
-
-            // Map Project to GetProjectDto
-            var getProjectDto = new GetProjectDto()
+            catch (Exception err)
             {
-                Title = project.Title,
-                Description = project.Description,
-                Category = project.Category.Name,
-                User = userDto,
-                Images = imageDtoList,
-                Files = fileDtoList
-            };
-
-            if (project == null)
-            {
-                return NotFound();
+                throw;
             }
-
-            return getProjectDto;
         }
 
         // PUT: api/Projects/5
@@ -228,7 +231,8 @@ namespace WebAPI.Controllers
             return _context.Projects.Any(e => e.Id == id);
         }
 
-        private static ICollection<File> MapFiles(ICollection<FileDto> files)
+        // Map FileDto to File
+        private static List<File> MapFiles(List<FileDto> files)
         {
             // Map project files
             var fileList = new List<File>();
@@ -247,7 +251,8 @@ namespace WebAPI.Controllers
             return fileList;
         }
 
-        private static ICollection<Image> MapImages(ICollection<ImageDto> images)
+        // Map ImageDto to Image
+        private static List<Image> MapImages(List<ImageDto> images)
         {
             // Map project images
             var imageList = new List<Image>();
@@ -264,6 +269,47 @@ namespace WebAPI.Controllers
             };
 
             return imageList;
+        }
+
+        // Map File to FileDto
+        private static List<FileDto> MapFileDtos(ICollection<File> files, string userId)
+        {
+            var fileDtoList = new List<FileDto>();
+            foreach (var file in files)
+            {
+                var f = new FileDto
+                {
+                    FileName = file.FileName,
+                    Path = file.Path,
+                    Size = file.Size,
+                    IdentityId = userId,
+                };
+
+                fileDtoList.Add(f);
+            }
+
+            return fileDtoList;
+        }
+
+        // Map Image to ImageDto
+        private static List<ImageDto> MapImageDtos(ICollection<Image> images, string userId)
+        {
+            // Map project images
+            var imageDtoList = new List<ImageDto>();
+            foreach (var image in images)
+            {
+                var i = new ImageDto
+                {
+                    FileName = image.FileName,
+                    Path = image.Path,
+                    Size = image.Size,
+                    IdentityId = userId,
+                };
+
+                imageDtoList.Add(i);
+            };
+
+            return imageDtoList;
         }
     }
 }
