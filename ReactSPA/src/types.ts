@@ -26,6 +26,7 @@ export interface IFile {
   fileName: string;
   identityId: string;
   key: string;
+  isImage: boolean;
   size: number;
 }
 

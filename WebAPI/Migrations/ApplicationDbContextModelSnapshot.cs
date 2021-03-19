@@ -109,6 +109,9 @@ namespace WebAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsImage")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Key")
                         .IsRequired()
                         .HasColumnType("text");
@@ -126,39 +129,6 @@ namespace WebAPI.Migrations
                     b.HasIndex("ProjectId");
 
                     b.ToTable("File");
-                });
-
-            modelBuilder.Entity("WebAPI.Models.Image", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
-
-                    b.Property<int?>("BuildStepId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("ProjectId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Size")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BuildStepId");
-
-                    b.HasIndex("ProjectId");
-
-                    b.ToTable("Image");
                 });
 
             modelBuilder.Entity("WebAPI.Models.Project", b =>
@@ -272,19 +242,6 @@ namespace WebAPI.Migrations
                     b.Navigation("BuildStep");
                 });
 
-            modelBuilder.Entity("WebAPI.Models.Image", b =>
-                {
-                    b.HasOne("WebAPI.Models.BuildStep", "BuildStep")
-                        .WithMany("Images")
-                        .HasForeignKey("BuildStepId");
-
-                    b.HasOne("WebAPI.Models.Project", null)
-                        .WithMany("Images")
-                        .HasForeignKey("ProjectId");
-
-                    b.Navigation("BuildStep");
-                });
-
             modelBuilder.Entity("WebAPI.Models.Project", b =>
                 {
                     b.HasOne("WebAPI.Models.Category", "Category")
@@ -305,8 +262,6 @@ namespace WebAPI.Migrations
                     b.Navigation("Comments");
 
                     b.Navigation("Files");
-
-                    b.Navigation("Images");
                 });
 
             modelBuilder.Entity("WebAPI.Models.Category", b =>
@@ -328,8 +283,6 @@ namespace WebAPI.Migrations
                     b.Navigation("Comments");
 
                     b.Navigation("Files");
-
-                    b.Navigation("Images");
                 });
 
             modelBuilder.Entity("WebAPI.Models.User", b =>

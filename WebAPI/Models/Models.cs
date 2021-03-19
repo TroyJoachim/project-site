@@ -33,7 +33,6 @@ namespace WebAPI.Models
         public DateTime CreatedAt { get; set; }
         [Required]
         public DateTime EditedAt { get; set; }
-        public ICollection<Image> Images { get; set; }
         public ICollection<File> Files { get; set; }
 
         public User User { get; set; }
@@ -50,21 +49,8 @@ namespace WebAPI.Models
         public string Description { get; set; }
 
         public Project Project { get; set; }
-        public ICollection<Image> Images { get; set; }
         public ICollection<File> Files { get; set; }
         public ICollection<Comment> Comments { get; set; }
-    }
-
-    public class Image
-    {
-        public int Id { get; set; }
-        [Required]
-        public string FileName { get; set; }
-        [Required]
-        public string Key { get; set; }
-        public int Size { get; set; }
-
-        public BuildStep BuildStep { get; set; }
     }
 
     public class File
@@ -75,6 +61,7 @@ namespace WebAPI.Models
         [Required]
         public string Key { get; set; }
         public int Size { get; set; }
+        public bool IsImage { get; set; }
 
         public BuildStep BuildStep { get; set; }
     }

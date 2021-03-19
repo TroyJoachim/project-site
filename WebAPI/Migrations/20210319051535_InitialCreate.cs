@@ -139,6 +139,7 @@ namespace WebAPI.Migrations
                     FileName = table.Column<string>(type: "text", nullable: false),
                     Key = table.Column<string>(type: "text", nullable: false),
                     Size = table.Column<int>(type: "integer", nullable: false),
+                    IsImage = table.Column<bool>(type: "boolean", nullable: false),
                     BuildStepId = table.Column<int>(type: "integer", nullable: true),
                     ProjectId = table.Column<int>(type: "integer", nullable: true)
                 },
@@ -153,35 +154,6 @@ namespace WebAPI.Migrations
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_File_Projects_ProjectId",
-                        column: x => x.ProjectId,
-                        principalTable: "Projects",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Image",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    FileName = table.Column<string>(type: "text", nullable: false),
-                    Key = table.Column<string>(type: "text", nullable: false),
-                    Size = table.Column<int>(type: "integer", nullable: false),
-                    BuildStepId = table.Column<int>(type: "integer", nullable: true),
-                    ProjectId = table.Column<int>(type: "integer", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Image", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Image_BuildStep_BuildStepId",
-                        column: x => x.BuildStepId,
-                        principalTable: "BuildStep",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Image_Projects_ProjectId",
                         column: x => x.ProjectId,
                         principalTable: "Projects",
                         principalColumn: "Id",
@@ -224,16 +196,6 @@ namespace WebAPI.Migrations
                 column: "ProjectId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Image_BuildStepId",
-                table: "Image",
-                column: "BuildStepId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Image_ProjectId",
-                table: "Image",
-                column: "ProjectId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Projects_CategoryId",
                 table: "Projects",
                 column: "CategoryId");
@@ -251,9 +213,6 @@ namespace WebAPI.Migrations
 
             migrationBuilder.DropTable(
                 name: "File");
-
-            migrationBuilder.DropTable(
-                name: "Image");
 
             migrationBuilder.DropTable(
                 name: "BuildStep");

@@ -13,7 +13,7 @@ import draftToHtml from "draftjs-to-html";
 import CommentCard from "./CommentCard";
 import ReactHtmlParser from "react-html-parser";
 import { PageSideNav, SideNavType } from "./PageSideNav";
-import { getProject, downloadFile, getImage } from "./agent";
+import { getProject, getImage } from "./agent";
 import { IFile, IProjectModel, IBuildStepModel, LoadingState } from "./types";
 import { localizeDateTime } from "./helpers";
 import {
@@ -363,27 +363,6 @@ function Description(props: { text: string }) {
 function FileList(props: { files: IFile[] }) {
   // Hides the table if there are no files
   const tableHidden = props.files.length > 0 ? "" : "d-none";
-
-//   function fileList() {
-//     const tableRow = props.files.map((file: IFile, i) => (
-//       <tr key={i}>
-//         <td>{file.file_name}</td>
-//         <td>TODO</td>
-//         <td>
-//           <Button
-//             variant="success"
-//             size="sm"
-//             className="float-right"
-//             onClick={() => downloadFile(file.link, file.file_name)}
-//           >
-//             <i className="fas fa-download"></i>
-//           </Button>
-//         </td>
-//       </tr>
-//     ));
-
-//     return tableRow;
-//   }
 
   return (
     <div className="mt-4">

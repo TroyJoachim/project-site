@@ -99,13 +99,13 @@ async function createProject(project: IProject) {
   };
 
   // Upload Files to S3
-  const s3FilesUpload = (files: File[]) => {
+  const s3FilesUpload = (files: File[], isImage: boolean) => {
     return files.map(async (file) => {
       const key = await s3FileUpload(file);
       return {
         fileName: file.name,
         key: key,
-        identityId: globalState.identityId.value,
+        isImage: isImage,
         size: file.size,
       } as IFile;
     });
@@ -114,10 +114,10 @@ async function createProject(project: IProject) {
   async function convertBuildStep(step: IBuildStep) {
     // Upload all the build step images and files to S3
     const bsImageObjList = await Promise.all(
-      s3FilesUpload(step.uploadedImages)
+      s3FilesUpload(step.uploadedImages, true)
     );
     const bsFileAttachmentObjList = await Promise.all(
-      s3FilesUpload(step.uploadedFiles)
+      s3FilesUpload(step.uploadedFiles, false)
     );
 
     // Return the build step
@@ -130,15 +130,14 @@ async function createProject(project: IProject) {
   }
 
   const bsPromiseArr = project.buildSteps.map(convertBuildStep);
-
   const buildSteps = await Promise.all(bsPromiseArr);
 
   // Upload all the project images and files to S3
   const projectImageObjList = await Promise.all(
-    s3FilesUpload(project.uploadedImages)
+    s3FilesUpload(project.uploadedImages, true)
   );
   const projectFileObjList = await Promise.all(
-    s3FilesUpload(project.uploadedFiles)
+    s3FilesUpload(project.uploadedFiles, false)
   );
 
   const newProject = {
@@ -175,26 +174,6 @@ async function createProject(project: IProject) {
     console.log(error);
     return null;
   }
-}
-
-function downloadFile(url: string, filename: string) {
-  // TOOD: removing his for now becaues Axios is configured to add it.
-  //       In the future this will probably point to a different url on Amazon s3.
-  const newUrl = url.replace("localhost:8000", "");
-  http
-    .get(newUrl, {
-      responseType: "blob",
-      headers: {
-        Authorization: `Bearer ${getUserToken()}`,
-      },
-    })
-    .then((res) => {
-      fileDownload(res.data, filename);
-    })
-    .catch((error) => {
-      console.log(error);
-      return null;
-    });
 }
 
 async function getProjectCategories() {
@@ -319,7 +298,6 @@ export {
   createUser,
   getProjects,
   getProject,
-  downloadFile,
   getProjectCategories,
   getImage,
   getUser,

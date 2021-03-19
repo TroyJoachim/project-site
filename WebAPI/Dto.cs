@@ -12,26 +12,15 @@ namespace WebAPI.Dto
         public int? ParentId { get; set; }
     }
 
-    public class ImageDto
-    {
-        [Required]
-        public string FileName { get; set; }
-        [Required]
-        public string Key { get; set; }
-        [Required]
-        public string IdentityId { get; set; }
-        public int Size { get; set; }
-    }
-
     public class FileDto
     {
         [Required]
         public string FileName { get; set; }
         [Required]
         public string Key { get; set; }
-        [Required]
         public string IdentityId { get; set; }
         public int Size { get; set; }
+        public bool IsImage { get; set; }
     }
 
     public class BuildStepDto
@@ -39,7 +28,6 @@ namespace WebAPI.Dto
         [Required]
         public string Title { get; set; }
         public string Description { get; set; }
-        public List<ImageDto> Images { get; set; }
         public List<FileDto> Files { get; set; }
     }
 
@@ -53,7 +41,6 @@ namespace WebAPI.Dto
         public string UserId { get; set; }
         [Required]
         public int CategoryId { get; set; }
-        public List<ImageDto> Images { get; set; }
         public List<FileDto> Files { get; set; }
         public List<BuildStepDto> BuildSteps { get; set; }
     }
@@ -84,7 +71,7 @@ namespace WebAPI.Dto
     public class GetProjectsDto
     {
         public string Title { get; set; }
-        public ImageDto Image { get; set; }
+        public FileDto Image { get; set; }
         public UserDto User { get; set; }
     }
 
@@ -96,7 +83,6 @@ namespace WebAPI.Dto
         public int? CategoryId { get; set; }
         public UserDto User { get; set; }
         public List<FileDto> Files { get; set; }
-        public List<ImageDto> Images { get; set; }
         public List<BuildStepDto> BuildSteps { get; set; }
     }
 }
