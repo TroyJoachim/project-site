@@ -1,12 +1,9 @@
 import { Storage } from "aws-amplify";
 import axios, { AxiosResponse } from "axios";
-import { fileDownload, getUserToken, getIdentityId } from "./helpers";
+import { fileDownload, getUserToken } from "./helpers";
 import { uuid } from "uuidv4";
+import { globalState } from "./globalState";
 import {
-  ITempProject,
-  ITempBuildStep,
-  IImage,
-  Image,
   ICategory,
   IGetProjectResponse,
   IProjectResponse,
@@ -20,6 +17,7 @@ import {
   IUpdateUserResponse,
   IProject,
   IBuildStep,
+  IFile,
 } from "./types";
 
 // Configure the global level for aws storage.
@@ -80,188 +78,98 @@ function getProject(id: string) {
     });
 }
 
-async function createProject(project: IProject, subcategoryId: string) {
+async function createProject(project: IProject) {
   console.log(project);
 
-  // S3 file uploads
-  // TODO: Not using yet. I was testing direct s3 file uploads.
-  async function uploadFileToS3(file: File | Image) {
-    // Check the type
-    function isFile(file: File | Image): file is File {
-      return (file as File) !== undefined;
+  // Upload File to S3
+  const s3FileUpload = async (file: File) => {
+    const fileName = uuid() + "-" + file.name;
+    try {
+      const result: any = await Storage.put(fileName, file, {
+        level: "protected",
+        contentType: file.type,
+      });
+      console.log(result);
+      return result.key;
+    } catch (err) {
+      console.log(err);
+      // TODO: error handling
+      return "err";
     }
+  };
 
-    async function uploadFile(
-      fileName: string,
-      contentType: string
-    ): Promise<string> {
-      try {
-        const result: any = await Storage.put(fileName, file, {
-          contentType: contentType,
-        });
-        console.log(result);
-        return result.key;
-      } catch (err) {
-        console.log(err);
-        // TODO: error handling
-        return "err";
-      }
-    }
-
-    if (isFile(file)) {
-      // Create a unique file name.
-      // TODO:
-      // Research if this is needed. If names are the same on s3, then the image will overwrite the old one
-      // with the same name. This is both good and bad. It's good because it reduces duplicate images, but
-      // it's bad because someone uploads a different image with the same name. Each users images will be stored
-      // in their own folder on s3, so only they will be effected by the duplicate name.
-      const fileName = uuid() + "." + file.name.split(".").pop();
-      return uploadFile(fileName, file.type);
-    } else {
-      const fileName = uuid() + "." + file.content.name.split(".").pop();
-      return uploadFile(fileName, file.content.type);
-    }
-  }
-
-  const id = await getIdentityId();
-
-  const toFileObj = (key: string) => {
-    const obj = {
-      key: key,
-      userId: id,
-    };
-
-    // TODO: storing a json string for now until we update the db schema.
-    return JSON.stringify(obj);
+  // Upload Files to S3
+  const s3FilesUpload = (files: File[]) => {
+    return files.map(async (file) => {
+      const key = await s3FileUpload(file);
+      return {
+        fileName: file.name,
+        key: key,
+        identityId: globalState.identityId.value,
+        size: file.size,
+      } as IFile;
+    });
   };
 
   async function convertBuildStep(step: IBuildStep) {
-    // upload build step files to the server
-    // const promiseFileArr = step.files.map(async (file: File) => {
-    //   const response: AxiosResponse = await uploadFiles(
-    //     "/api/attachment_files",
-    //     file
-    //   );
-    //   return response.data.file_attachment_id;
-    // });
-
-    // Upload build step images to the server
-    // const promiseImageArr = step.uploadedImages.map(async (file: Image) => {
-    //   const response: AxiosResponse = await uploadFiles(
-    //     "/api/images",
-    //     file.content
-    //   );
-    //   return response.data.image_id;
-    // });
-
-    // S3 file uploading
-    // const promiseS3ImageUploadArr = step.images.map(async (file: Image) => {
-    //     return await uploadFileToS3(file);
-    // });
-
-    // const promiseS3FileUploadArr = step.files.map(async (file: File) => {
-    //     return await uploadFileToS3(file);
-    // });
-
-    // When all the Promises have been resolved
-    //const bsImageIds = await Promise.all(promiseImageArr);
-    //const bsfileAttachmentIds = await Promise.all(promiseFileArr);
-
-    // S3 file uploads
-    // const bsImageKeys = await Promise.all(promiseS3ImageUploadArr);
-    // const bsFileAttachmentKeys = await Promise.all(promiseS3FileUploadArr);
-    // Create an image and file object to store in the db
-    // const imageObjectArr = bsImageKeys.map(toFileObj);
-    // const fileObjectArr = bsFileAttachmentKeys.map(toFileObj);
+    // Upload all the build step images and files to S3
+    const bsImageObjList = await Promise.all(
+      s3FilesUpload(step.uploadedImages)
+    );
+    const bsFileAttachmentObjList = await Promise.all(
+      s3FilesUpload(step.uploadedFiles)
+    );
 
     // Return the build step
     return {
       title: step.title,
       description: step.description,
-      images: [],
-      files: [],
+      images: bsImageObjList,
+      files: bsFileAttachmentObjList,
     };
-  }
-
-  async function uploadFiles(url: string, file: File) {
-    console.log(file);
-    var formData = new FormData();
-    formData.append("file", file, file.name);
-
-    return await http.post(url, formData, {
-      headers: {
-        "content-type": "multipart/form-data",
-        Authorization: `Bearer ${getUserToken()}`,
-      },
-    });
   }
 
   const bsPromiseArr = project.buildSteps.map(convertBuildStep);
-  const projectPromise = Promise.all(bsPromiseArr).then(async (result) => {
-    // const promiseFileArr = project.uploadedFiles.map(async (file: File) => {
-    //   const response: AxiosResponse = await uploadFiles(
-    //     "/api/attachment_files",
-    //     file
-    //   );
-    //   return response.data.file_attachment_id;
-    // });
 
-    // const promiseImageArr = project.uploadedImages.map(async (file: Image) => {
-    //   const response: AxiosResponse = await uploadFiles(
-    //     "/api/images",
-    //     file.content
-    //   );
-    //   return response.data.image_id;
-    // });
+  const buildSteps = await Promise.all(bsPromiseArr);
 
-    // const promiseS3ImageUploadArr = project.images.map(
-    //     async (file: Image) => {
-    //         return await uploadFileToS3(file);
-    //     }
-    // );
+  // Upload all the project images and files to S3
+  const projectImageObjList = await Promise.all(
+    s3FilesUpload(project.uploadedImages)
+  );
+  const projectFileObjList = await Promise.all(
+    s3FilesUpload(project.uploadedFiles)
+  );
 
-    // const promiseS3FileUploadArr = project.files.map(async (file: File) => {
-    //     return await uploadFileToS3(file);
-    // });
+  const newProject = {
+    title: project.title,
+    description: project.description,
+    categoryId: project.categoryId,
+    userId: globalState.identityId.value,
+    buildSteps: buildSteps,
+    images: projectImageObjList,
+    files: projectFileObjList,
+  };
 
-    //const projectImageIds = await Promise.all(promiseImageArr);
-    //const projectFileAttachmentIds = await Promise.all(promiseFileArr);
-
-    // S3 file uploads
-    // const projectImageKeys = await Promise.all(promiseS3ImageUploadArr);
-    // const projectFileKeys = await Promise.all(promiseS3FileUploadArr);
-
-    return {
-      title: project.title,
-      description: project.description,
-      categoryId: subcategoryId,
-      userId: 0,
-      buildSteps: result,
-      images: [],
-      files: [],
-    };
-  });
-
-  async function uploadProject(result: any) {
-    return await http.post<ICreateProjectResponse>("/api/projects", result, {
-      headers: {
-        "Content-type": "application/json",
-        Authorization: `Bearer ${getUserToken()}`,
-      },
-      // Manually map the response to a Typescript interface.
-      transformResponse: [
-        (response: any) => {
-          const projectResponse: IPostProjectResponse = JSON.parse(response);
-          return projectResponse;
-        },
-      ],
-    });
-  }
-
-  const result = await projectPromise;
   try {
-    const response = await uploadProject(result);
-    console.log("response: ", response); // TODO: for development
+    const response = await http.post<ICreateProjectResponse>(
+      "/api/projects",
+      JSON.stringify(newProject),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+        // Manually map the response to a Typescript interface.
+        transformResponse: [
+          (response: any) => {
+            const projectResponse: IPostProjectResponse = JSON.parse(response);
+            return projectResponse;
+          },
+        ],
+      }
+    );
+    console.log("response:", response); // TODO: for development
     return response;
   } catch (error) {
     console.log(error);
@@ -389,6 +297,22 @@ async function updateUser(user: IUser) {
   }
 }
 
+async function userExists(identityId: string) {
+  try {
+    const response = await http.get("/api/users/userexists/" + identityId, {
+      headers: {
+        "Content-type": "application/json",
+        Authorization: `Bearer ${getUserToken()}`,
+      },
+    });
+    if (response && response.status === 204) return true;
+    return false;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+
 export {
   http,
   createProject,
@@ -400,4 +324,5 @@ export {
   getImage,
   getUser,
   updateUser,
+  userExists,
 };

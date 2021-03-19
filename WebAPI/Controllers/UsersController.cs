@@ -28,19 +28,13 @@ namespace WebAPI.Controllers
             return await _context.Users.ToListAsync();
         }
 
-        // GET: api/Users/5
-        //[HttpGet("{id}")]
-        //public async Task<ActionResult<User>> GetUser(int id)
-        //{
-        //    var user = await _context.Users.FindAsync(id);
-
-        //    if (user == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    return user;
-        //}
+        // GET: api/UserExists/5
+        [HttpGet("UserExists/{identityId}")]
+        public async Task<IActionResult> UserExists(string identityId)
+        {
+            var result = await _context.Users.AnyAsync(e => e.IdentityId == identityId);
+            return result ? NoContent() : NotFound();
+        }
 
         // GET: api/Users/5
         [HttpGet("{identityId}")]
@@ -80,7 +74,7 @@ namespace WebAPI.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!UserExists(identityId))
+                if (!PrivateUserExists(identityId))
                 {
                     return NotFound();
                 }
@@ -129,7 +123,7 @@ namespace WebAPI.Controllers
             return NoContent();
         }
 
-        private bool UserExists(string identityId)
+        private bool PrivateUserExists(string identityId)
         {
             return _context.Users.Any(e => e.IdentityId == identityId);
         }

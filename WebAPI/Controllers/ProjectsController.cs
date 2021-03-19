@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using WebAPI.Dto;
 using WebAPI.Models;
 
@@ -15,10 +16,12 @@ namespace WebAPI.Controllers
     public class ProjectsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger _logger;
 
-        public ProjectsController(ApplicationDbContext context)
+        public ProjectsController(ApplicationDbContext context, ILogger<ProjectsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: api/Projects
@@ -27,52 +30,51 @@ namespace WebAPI.Controllers
         {
             try
             {
+                var projectsDto = new List<GetProjectsDto>();
 
+                // Get projects from the database
+                var projects = await _context.Projects.Include(p => p.Images).Include(p => p.User).ToListAsync();
+
+                // Map Project to ProjectDto and add it to the list
+                foreach (var project in projects)
+                {
+                    // Map the main image
+                    var image = project.Images.FirstOrDefault();
+                    ImageDto newImageDto = null;
+                    if (image != null)
+                    {
+                        newImageDto = new ImageDto
+                        {
+                            FileName = image.FileName,
+                            Key = image.Key,
+                            Size = image.Size
+                        };
+                    }
+
+                    // Map the User
+                    var userDto = new UserDto()
+                    {
+                        IdentityId = project.User.IdentityId, // TODO: check if I need to send this
+                        Username = project.User.Username
+                    };
+
+                    var getProjectDto = new GetProjectsDto
+                    {
+                        Title = project.Title,
+                        Image = newImageDto,
+                        User = userDto,
+                    };
+
+                    projectsDto.Add(getProjectDto);
+                };
+
+                return projectsDto;
             }
             catch (Exception)
             {
 
                 throw;
             }
-            var projectsDto = new List<GetProjectsDto>();
-
-            // Get projects from the database
-            var projects = await _context.Projects.Include(p => p.Images).Include(p => p.User).ToListAsync();
-
-            // Map Project to ProjectDto and add it to the list
-            foreach (var project in projects)
-            {
-                // Map the main image
-                var image = project.Images.FirstOrDefault();
-                ImageDto newImageDto = null;
-                if (image != null)
-                {
-                    newImageDto = new ImageDto
-                    {
-                        FileName = image.FileName,
-                        Path = image.Path,
-                        Size = image.Size
-                    };
-                }
-
-                // Map the User
-                var userDto = new UserDto()
-                {
-                    IdentityId = project.User.IdentityId, // TODO: check if I need to send this
-                    Username = project.User.Username
-                };
-
-                var getProjectDto = new GetProjectsDto
-                {
-                    Title = project.Title,
-                    Image = newImageDto,
-                    User = userDto,
-                };
-
-                projectsDto.Add(getProjectDto);
-            };
-
-            return projectsDto;
         }
 
         // GET: api/Projects/5
@@ -128,7 +130,7 @@ namespace WebAPI.Controllers
 
                 return getProjectDto;
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
                 throw;
             }
@@ -170,44 +172,63 @@ namespace WebAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<ProjectDto>> PostProject(ProjectDto project)
         {
-            var buildSteps = new List<BuildStep>();
-
-            // Map each BuildStepDto to a BuildStep Model
-            foreach (var buildStep in project.BuildSteps)
+            try
             {
-                var newBuildStep = new BuildStep
+                _logger.LogInformation("api/Projects");
+                var category = await _context.Categories.FindAsync(project.CategoryId);
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.IdentityId == project.UserId);
+                if (user == null)
                 {
-                    Title = buildStep.Title,
-                    Description = buildStep.Description,
-                    Images = MapImages(buildStep.Images),
-                    Files = MapFiles(buildStep.Files),
+                    _logger.LogWarning("User was empty");
+                    return BadRequest();
+                }
+                if (category == null)
+                {
+                    _logger.LogWarning("Category was empty");
+                    return BadRequest();
+                }
+
+                // Map each BuildStepDto to a BuildStep Model
+                var buildSteps = new List<BuildStep>();
+                foreach (var buildStep in project.BuildSteps)
+                {
+                    var newBuildStep = new BuildStep
+                    {
+                        Title = buildStep.Title,
+                        Description = buildStep.Description,
+                        Images = MapImages(buildStep.Images),
+                        Files = MapFiles(buildStep.Files),
+                    };
+
+                    buildSteps.Add(newBuildStep);
                 };
 
-                buildSteps.Add(newBuildStep);
-            };
+                // Map the ProjectDTO to a Project Model
+                var newProject = new Project
+                {
+                    Title = project.Title,
+                    Description = project.Description,
+                    Category = category,
+                    User = user,
+                    Images = MapImages(project.Images),
+                    Files = MapFiles(project.Files),
+                    BuildSteps = buildSteps,
+                    CreatedAt = DateTime.UtcNow,
+                    EditedAt = DateTime.UtcNow,
+                };
 
-            var category = await _context.Categories.FindAsync(project.CategoryId);
-            var user = await _context.Users.FindAsync(project.UserId);
+                // Add the new Project to the context and save the changes.
+                _context.Projects.Add(newProject);
+                await _context.SaveChangesAsync();
 
-            // Map the ProjectDTO to a Project Model
-            var newProject = new Project
+                return CreatedAtAction("GetProject", new { id = newProject.Id }, newProject);
+            }
+            catch (Exception ex)
             {
-                Title = project.Title,
-                Description = project.Description,
-                Category = category,
-                User = user,
-                Images = MapImages(project.Images),
-                Files = MapFiles(project.Files),
-                BuildSteps = buildSteps,
-                CreatedAt = DateTime.UtcNow,
-                EditedAt = DateTime.UtcNow,
-            };
 
-            // Add the new Project to the context and save the changes.
-            _context.Projects.Add(newProject);
-            await _context.SaveChangesAsync();
+                throw;
+            }
 
-            return CreatedAtAction("GetProject", new { id = newProject.Id }, newProject);
         }
 
         // DELETE: api/Projects/5
@@ -241,7 +262,7 @@ namespace WebAPI.Controllers
                 var f = new File
                 {
                     FileName = file.FileName,
-                    Path = file.Path,
+                    Key = file.Key,
                     Size = file.Size
                 };
 
@@ -261,7 +282,7 @@ namespace WebAPI.Controllers
                 var i = new Image
                 {
                     FileName = image.FileName,
-                    Path = image.Path,
+                    Key = image.Key,
                     Size = image.Size
                 };
 
@@ -280,7 +301,7 @@ namespace WebAPI.Controllers
                 var f = new FileDto
                 {
                     FileName = file.FileName,
-                    Path = file.Path,
+                    Key = file.Key,
                     Size = file.Size,
                     IdentityId = userId,
                 };
@@ -301,7 +322,7 @@ namespace WebAPI.Controllers
                 var i = new ImageDto
                 {
                     FileName = image.FileName,
-                    Path = image.Path,
+                    Key = image.Key,
                     Size = image.Size,
                     IdentityId = userId,
                 };

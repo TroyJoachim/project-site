@@ -27,7 +27,7 @@ function TextEditor(props: ITextEditor) {
 
         // TODO: We probably should just save the raw json object into the database.
         if (contentState) {
-            description.set(JSON.stringify(convertToRaw(contentState)));
+            description.set(btoa(JSON.stringify(convertToRaw(contentState))));
         }
     };
 

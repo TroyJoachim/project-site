@@ -1,6 +1,7 @@
 import { Auth, CognitoUser } from "@aws-amplify/auth";
 import { createState } from "@hookstate/core";
 import { CognitoUserSession } from "amazon-cognito-identity-js";
+import { userExists, createUser } from "./agent";
 
 interface GlobalState {
   isAuthenticating: boolean;
@@ -19,6 +20,21 @@ const globalState = createState<GlobalState>({
   username: null,
 });
 
+// Checks if the user already exists on the API. If they don't then something went wrong during the account creation.
+// This function will add the user to the API if they are not found.
+async function syncUserAccount(identityId: string, username: string) {
+  try {
+    // Check if the user exists on the API
+    const response = await userExists(identityId);
+    if (response) return;
+
+    await createUser(identityId, username);
+    // Something else went wrong.
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 async function refreshAuthenticatedUser() {
   console.log("refreshAuthenticatedUser");
   // TODO: check if the function save the user information in the browsers local state.
@@ -32,11 +48,15 @@ async function refreshAuthenticatedUser() {
     globalState.identityId.set(credentials.identityId);
 
     // Set the username in global state
-    globalState.username.set(user.getUsername());
+    const username = user.getUsername();
+    globalState.username.set(username);
 
     // Get User Token and store it in state.
     const session = await Auth.currentSession();
     globalState.session.set(session);
+
+    // Make sure the user account has been created on the API
+    await syncUserAccount(credentials.identityId, username);
 
     globalState.isAuthenticated.set(true);
   } catch (error) {
@@ -60,11 +80,15 @@ async function getAuthenticatedUser() {
     globalState.identityId.set(credentials.identityId);
 
     // Set the username in global state
-    globalState.username.set(user.getUsername());
+    const username = user.getUsername();
+    globalState.username.set(username);
 
     // Get User Token and store it in state.
     const session = await Auth.currentSession();
     globalState.session.set(session);
+
+    // Make sure the user account has been created on the API
+    await syncUserAccount(credentials.identityId, username);
 
     globalState.isAuthenticated.set(true);
   } catch (error) {

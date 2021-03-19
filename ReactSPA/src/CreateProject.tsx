@@ -47,7 +47,6 @@ function CreateProject() {
   const showModal = useHookstate(false);
   const modalSuccess = useHookstate(false);
   const projectCategories = useHookstate<ICategory[]>([]);
-  const projectCategoryId = useHookstate("");
   const validated = useHookstate(false);
   const descHasText = useHookstate(false);
   const formValidationErrors = useHookstate(false);
@@ -93,6 +92,12 @@ function CreateProject() {
       console.log("Missing project title");
     }
 
+    // Validate category dropdown
+    if (project.categoryId.value === 0) {
+      formValidationErrors.set(true);
+      console.log("Category not selected");
+    }
+
     // Check if at least on image has been selected
     if (project.uploadedImages.length === 0) {
       formValidationErrors.set(true);
@@ -108,58 +113,41 @@ function CreateProject() {
       console.log("Missing desciption");
     }
 
-    // Check if all the build steps have a title and at least one image.
-    function validateBuildSteps() {
+    // If there are build steps
+    if (project.buildSteps.length > 0) {
+      // Check if all the build steps have a title and at least one image.
       const bsResult = project.buildSteps.map((bs) => {
-        return bs.title.get().length > 0 && bs.images.get().length > 0;
+        return bs.title.get().length > 0 && bs.uploadedImages.get().length > 0;
       });
 
-      // If there are build steps.
-      if (bsResult.length > 0) {
-        // Check if any return false, meaning that one of the build steps failed validation.
-        const result = bsResult.includes(false);
-        // If one failed validation.
-        if (result) {
-          formValidationErrors.set(true);
-          return false;
-        }
-        // Build Step validation passed
-        return true;
-      }
-      // Return true because there are no build steps to validate.
-      return true;
+      // Check if any return false, meaning that one of the build steps failed validation.
+      const result = bsResult.includes(false);
+      // If one failed validation.
+      if (result) formValidationErrors.set(true);
+      // Build Step validation passed
     }
 
-    if (
-      !formValidationErrors.get() &&
-      hasImage.get() &&
-      descHasText.get() &&
-      validateBuildSteps()
-    ) {
+    if (!formValidationErrors.get()) {
       console.log("The form has been validated.");
       // Show uploading modal
       showModal.set(true);
-      formValidationErrors.set(false);
 
       // Downgrade the state. This is required because the File/Blob has issue with the
       // Proxy type that Hookstate uses. This remove the Proxy type.
       project.attach(Downgraded);
 
       // Submit form
-      createProject(project.get(), projectCategoryId.get()).then(
-        (response: any) => {
-          if (response) {
-            if (response.status === 200) {
-              console.log(response.status);
-              modalSuccess.set(true);
-              modalRoute.set("/project/" + response.data.project_id);
-            } else {
-              // TODO: handle error
-              modalSuccess.set(false);
-            }
+      createProject(project.get())
+        .then((response: any) => {
+          if (response && response.status === 201) {
+            console.log(response.status);
+            modalSuccess.set(true);
+            modalRoute.set("/project/" + response.data.project_id);
+          } else {
+            // TODO: handle error
+            modalSuccess.set(false);
           }
-        }
-      );
+        })
     }
   }
 
@@ -187,8 +175,8 @@ function CreateProject() {
   }
 
   function handleDropdownSelect(event: React.ChangeEvent<HTMLSelectElement>) {
-    event.preventDefault();
-    projectCategoryId.set(event.target.value);
+    console.log(event.target.value);
+    project.categoryId.set(parseInt(event.target.value));
   }
 
   return (
@@ -374,7 +362,7 @@ function BuildStep(props: {
             />
           </div>
         </Form>
-        <FileUpload files={buildStep.files} />
+        <FileUpload files={buildStep.uploadedFiles} />
         <Button
           variant="danger"
           className="mt-3"

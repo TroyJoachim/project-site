@@ -61,7 +61,7 @@ namespace WebAPI.Models
         [Required]
         public string FileName { get; set; }
         [Required]
-        public string Path { get; set; }
+        public string Key { get; set; }
         public int Size { get; set; }
 
         public BuildStep BuildStep { get; set; }
@@ -73,7 +73,7 @@ namespace WebAPI.Models
         [Required]
         public string FileName { get; set; }
         [Required]
-        public string Path { get; set; }
+        public string Key { get; set; }
         public int Size { get; set; }
 
         public BuildStep BuildStep { get; set; }

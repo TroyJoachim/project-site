@@ -8,14 +8,13 @@ import {
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import { useHookstate, State, Downgraded, none } from "@hookstate/core";
-import { Image } from "./types";
 import { getImage } from "./agent";
 import { notEmpty } from "./helpers";
 
 // Source: https://github.com/atlassian/react-beautiful-dnd/blob/master/docs/about/examples.md
 
 // a little function to help us with reordering the result
-const reorder = (list: Image[], startIndex: any, endIndex: any) => {
+const reorder = (list: File[], startIndex: any, endIndex: any) => {
     const result = Array.from(list);
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
@@ -48,7 +47,7 @@ function UploadSvg(props: UploadSvgProps) {
 }
 
 function ImageUpload(props: {
-    images: State<Image[]>;
+    images: State<File[]>;
     imageIds?: string[];
     validated: boolean;
 }) {
@@ -65,18 +64,14 @@ function ImageUpload(props: {
                 if (imageResponse) {
                     // Convert images to Image type
                     const newFile = new File([imageResponse.data], id);
-                    const newImage = {
-                        id: id,
-                        content: newFile,
-                    };
-                    return newImage;
+                    return newFile;
                 }
                 return null; // else
             });
 
             Promise.all(imageUrlsPromiseArr).then((result) => {
                 // Filter out the empty values
-                const images: Image[] = result.filter(notEmpty);
+                const images: File[] = result.filter(notEmpty);
 
                 imgArr.set(images);
             });
@@ -129,7 +124,7 @@ function ImageUpload(props: {
 }
 
 function MainImageUpload(props: {
-    imgArr: State<Image[]>;
+    imgArr: State<File[]>;
     hoverImg: State<string | null>;
     inputField: React.RefObject<HTMLInputElement>;
 }) {
@@ -158,12 +153,12 @@ function MainImageUpload(props: {
 
         let hoverImage = null;
         if (hoverImg.value) {
-            hoverImage = imgArr.get().find((i) => i.id === hoverImg.get());
+            hoverImage = imgArr.get().find((i) => i.name === hoverImg.get());
         }
         return hoverImage // If there is a hover image set
-            ? mainImage(hoverImage.content)
+            ? mainImage(hoverImage)
             : imgArr.length > 0 // Else, if there are images
-            ? mainImage(imgArr[0].content.get()) // load the first image
+            ? mainImage(imgArr[0].get()) // load the first image
             : defaultImg;
     }
 
@@ -171,20 +166,12 @@ function MainImageUpload(props: {
         // Note: The FileList type does not support array operations. You have to instantiate an array from the type; otherwise, offset notation is the only way to access.
         const files = event.target.files;
         if (files) {
-            // Get all new image files
-            let newImages: Image[] = Array.from(files).map((x) => {
-                return {
-                    id: x.name,
-                    content: x,
-                };
-            });
-
             // Collect all images
-            let allImages = newImages.concat(imgArr.get());
+            let allImages = Array.from(files).concat(imgArr.get());
 
             // Keep only distinct images
             let distinctImages = allImages.filter(
-                (thing, i, arr) => arr.findIndex((t) => t.id === thing.id) === i
+                (thing, i, arr) => arr.findIndex((t) => t.name === thing.name) === i
             );
 
             // Add the images to the state.
@@ -245,7 +232,7 @@ function MainImageUpload(props: {
 }
 
 function SortableImageList(props: {
-    imgArr: State<Image[]>;
+    imgArr: State<File[]>;
     hoverImg: State<string | null>;
     inputField: React.RefObject<HTMLInputElement>;
 }) {
@@ -275,8 +262,8 @@ function SortableImageList(props: {
         }
     }
 
-    function removeImage(id: string) {
-        const index = imgArr.get().findIndex((img) => img.id === id);
+    function removeImage(name: string) {
+        const index = imgArr.get().findIndex((img) => img.name === name);
         imgArr[index].set(none);
     }
 
@@ -353,10 +340,10 @@ function SortableImageList(props: {
 
     function draggableItems() {
         return imgArr.value.map((item, index) => (
-            <Draggable key={item.id} draggableId={item.id} index={index}>
+            <Draggable key={item.name} draggableId={item.name} index={index}>
                 {(provided, snapshot) => (
                     <div
-                        onMouseEnter={() => hoverImg.set(item.id)}
+                        onMouseEnter={() => hoverImg.set(item.name)}
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
@@ -367,11 +354,11 @@ function SortableImageList(props: {
                     >
                         <button
                             style={deleteBtnStyle}
-                            onClick={() => removeImage(item.id)}
+                            onClick={() => removeImage(item.name)}
                         >
                             <div style={xStyle}>x</div>
                         </button>
-                        {thumbnail(item.content)}
+                        {thumbnail(item)}
                     </div>
                 )}
             </Draggable>

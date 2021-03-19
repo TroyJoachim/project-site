@@ -1,37 +1,5 @@
 import { CognitoUser } from "@aws-amplify/auth";
 
-export interface ITempBuildStep {
-  order: number;
-  name: string;
-  description: string;
-  images: IImage[];
-  files: File[];
-}
-
-export interface ITempProject {
-  id: string;
-  name: string;
-  description: string;
-  subcategory_id: string;
-  subcategory: string; // Temporary, need to update api to subcategory_id
-  build_steps: ITempBuildStep[];
-  images: IImage[];
-  files: File[];
-}
-
-export interface IEditProjectModel {
-  id: string;
-  name: string;
-  description: string;
-  subcategory_id: string;
-  subcategory: string; // Temporary, need to update api to subcategory_id
-  creation_datetime: string;
-  image_ids: string[];
-  images: IImage[];
-  build_steps: IEditProjectBuildStepModel[];
-  files: File[];
-}
-
 export interface IHomeProject {
   id: string;
   name: string;
@@ -47,29 +15,17 @@ export interface IProject {
   category: string;
   categoryId: number;
   buildSteps: IBuildStep[];
-  images: IImage[];
-  uploadedImages: Image[];
+  images: IFile[];
+  uploadedImages: File[];
   files: IFile[];
   uploadedFiles: File[];
   user: IUser;
 }
 
-export interface IImage {
-  fileName: string;
-  identityId: string;
-  path: string;
-  size: number;
-}
-
-export interface Image {
-  id: string;
-  content: File;
-}
-
 export interface IFile {
   fileName: string;
   identityId: string;
-  path: string;
+  key: string;
   size: number;
 }
 
@@ -77,8 +33,8 @@ export interface IBuildStep {
   order: number;
   title: string;
   description: string;
-  images: IImage[];
-  uploadedImages: Image[];
+  images: IFile[];
+  uploadedImages: File[];
   files: File[];
   uploadedFiles: File[];
 }
@@ -116,28 +72,6 @@ export interface IProjectModel {
   image_urls: string[];
   build_steps: IBuildStepModel[];
   file_attachments: IFile[];
-}
-
-export interface IEditProjectBuildStepModel {
-  order: number;
-  name: string;
-  description: string;
-  image_ids: string[];
-  images: IImage[];
-  files: File[];
-}
-
-export interface IEditProjectModel {
-  id: string;
-  name: string;
-  description: string;
-  subcategory_id: string;
-  subcategory: string; // Temporary, need to update api to subcategory_id
-  creation_datetime: string;
-  image_ids: string[];
-  images: IImage[];
-  build_steps: IEditProjectBuildStepModel[];
-  files: File[];
 }
 
 export interface IS3Image {

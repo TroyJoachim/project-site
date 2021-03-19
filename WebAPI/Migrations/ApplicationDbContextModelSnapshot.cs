@@ -109,7 +109,7 @@ namespace WebAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Path")
+                    b.Property<string>("Key")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -142,7 +142,7 @@ namespace WebAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Path")
+                    b.Property<string>("Key")
                         .IsRequired()
                         .HasColumnType("text");
 

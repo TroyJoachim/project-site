@@ -10,7 +10,7 @@ using WebAPI.Models;
 namespace WebAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20210314194708_InitialCreate")]
+    [Migration("20210319001200_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -111,7 +111,7 @@ namespace WebAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Path")
+                    b.Property<string>("Key")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -144,7 +144,7 @@ namespace WebAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Path")
+                    b.Property<string>("Key")
                         .IsRequired()
                         .HasColumnType("text");
 
