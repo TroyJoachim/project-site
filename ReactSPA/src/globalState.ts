@@ -9,6 +9,7 @@ interface GlobalState {
   session: CognitoUserSession | null;
   identityId: string | null;
   username: string | null;
+  sub: string | null;
 }
 
 // Create global state
@@ -18,6 +19,7 @@ const globalState = createState<GlobalState>({
   session: null,
   identityId: null,
   username: null,
+  sub: null,
 });
 
 // Checks if the user already exists on the API. If they don't then something went wrong during the account creation.
@@ -87,6 +89,13 @@ async function getAuthenticatedUser() {
     const session = await Auth.currentSession();
     globalState.session.set(session);
 
+    // TODO: testing
+    const attributes = await Auth.userAttributes(user);
+    const sub = attributes.find((a) => a.Name === "sub");
+    if (sub) {
+      globalState.sub.set(sub.Value);
+    }
+    
     // Make sure the user account has been created on the API
     await syncUserAccount(credentials.identityId, username);
 
@@ -109,6 +118,7 @@ async function signOut() {
       session: null,
       identityId: null,
       username: null,
+      sub: null,
     });
   } catch (error) {
     console.log("error signing out: ", error);

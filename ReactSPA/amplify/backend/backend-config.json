@@ -1,6 +1,6 @@
 {
   "auth": {
-    "reactspa6b9b07e9": {
+    "reactspa618c51ff": {
       "service": "Cognito",
       "providerPlugin": "awscloudformation",
       "dependsOn": [],
@@ -8,7 +8,7 @@
     }
   },
   "storage": {
-    "FileUploads": {
+    "filestorage1212": {
       "service": "S3",
       "providerPlugin": "awscloudformation"
     }

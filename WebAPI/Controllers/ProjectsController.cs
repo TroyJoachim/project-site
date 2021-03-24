@@ -33,7 +33,11 @@ namespace WebAPI.Controllers
                 var projectsDto = new List<GetProjectsDto>();
 
                 // Get projects from the database
-                var projects = await _context.Projects.Include(p => p.User).ToListAsync();
+                var projects = await _context.Projects
+                    .Include(p => p.User)
+                    .Include(p => p.Category)
+                    .Include(p => p.Files)
+                    .ToListAsync();
 
                 // Map Project to ProjectDto and add it to the list
                 foreach (var project in projects)
@@ -48,12 +52,13 @@ namespace WebAPI.Controllers
                             FileName = image.FileName,
                             Key = image.Key,
                             IdentityId = project.User.IdentityId,
-                            Size = image.Size
+                            Size = image.Size,
+                            IsImage = image.IsImage,
                         };
                     }
 
                     // Map the User
-                    var userDto = new UserDto()
+                    var userDto = new BasicUserDto()
                     {
                         IdentityId = project.User.IdentityId, // TODO: check if I need to send this
                         Username = project.User.Username
@@ -61,7 +66,9 @@ namespace WebAPI.Controllers
 
                     var getProjectDto = new GetProjectsDto
                     {
+                        Id = project.Id,
                         Title = project.Title,
+                        Category = project.Category.Name,
                         Image = newFileDto,
                         User = userDto,
                     };
@@ -259,7 +266,8 @@ namespace WebAPI.Controllers
                 {
                     FileName = file.FileName,
                     Key = file.Key,
-                    Size = file.Size
+                    Size = file.Size,
+                    IsImage = file.IsImage,
                 };
 
                 fileList.Add(f);
@@ -280,6 +288,7 @@ namespace WebAPI.Controllers
                     Key = file.Key,
                     Size = file.Size,
                     IdentityId = userId,
+                    IsImage = file.IsImage,
                 };
 
                 fileDtoList.Add(f);

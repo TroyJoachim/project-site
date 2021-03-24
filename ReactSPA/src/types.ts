@@ -2,10 +2,11 @@ import { CognitoUser } from "@aws-amplify/auth";
 
 export interface IHomeProject {
   id: string;
-  name: string;
-  sub_category: string;
-  images: string[];
-  image: string;
+  title: string;
+  category: string;
+  image: IFile;
+  imageUrl: string;
+  user: IUser;
 }
 
 export interface IProject {
@@ -136,7 +137,7 @@ export interface ICreateUser {
 
 export interface IAxiosResponse {
   status: number;
-  data: IUser | ICreateUser;
+  data: IUser | ICreateUser | IHomeProject[];
 }
 
 export interface IUpdateUserResponse {

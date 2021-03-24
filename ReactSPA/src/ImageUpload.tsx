@@ -8,7 +8,6 @@ import {
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import { useHookstate, State, Downgraded, none } from "@hookstate/core";
-import { getImage } from "./agent";
 import { notEmpty } from "./helpers";
 
 // Source: https://github.com/atlassian/react-beautiful-dnd/blob/master/docs/about/examples.md
@@ -58,23 +57,23 @@ function ImageUpload(props: {
 
     useEffect(() => {
         if (props.imageIds) {
-            const imageUrlsPromiseArr = props.imageIds.map(async (id) => {
-                // TODO: Need better error handling if getImage fails
-                const imageResponse = await getImage(id);
-                if (imageResponse) {
-                    // Convert images to Image type
-                    const newFile = new File([imageResponse.data], id);
-                    return newFile;
-                }
-                return null; // else
-            });
+            // const imageUrlsPromiseArr = props.imageIds.map(async (id) => {
+            //     // TODO: Need better error handling if getImage fails
+            //     const imageResponse = await getImage(id);
+            //     if (imageResponse) {
+            //         // Convert images to Image type
+            //         const newFile = new File([imageResponse.data], id);
+            //         return newFile;
+            //     }
+            //     return null; // else
+            // });
 
-            Promise.all(imageUrlsPromiseArr).then((result) => {
-                // Filter out the empty values
-                const images: File[] = result.filter(notEmpty);
+            // Promise.all(imageUrlsPromiseArr).then((result) => {
+            //     // Filter out the empty values
+            //     const images: File[] = result.filter(notEmpty);
 
-                imgArr.set(images);
-            });
+            //     imgArr.set(images);
+            // });
         }
     }, [props.imageIds]);
 

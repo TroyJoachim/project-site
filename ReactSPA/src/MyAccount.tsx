@@ -237,13 +237,15 @@ function AvatarForm() {
         contentType: "text/plain",
       });
 
+      console.log(result);
+
       // Update the user avatar on the API
       const id = gState.identityId.value;
-      const response = await updateUser({
-        identityId: id,
-        avatarImgKey: result.key,
-        projects: null,
-      });
+      // const response = await updateUser({
+      //   identityId: id,
+      //   avatarImgKey: result.key,
+      //   projects: null,
+      // });
 
       setFeedback({
         show: true,

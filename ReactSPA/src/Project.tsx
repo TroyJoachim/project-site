@@ -13,7 +13,7 @@ import draftToHtml from "draftjs-to-html";
 import CommentCard from "./CommentCard";
 import ReactHtmlParser from "react-html-parser";
 import { PageSideNav, SideNavType } from "./PageSideNav";
-import { getProject, getImage } from "./agent";
+import { getProject } from "./agent";
 import { IFile, IProjectModel, IBuildStepModel, LoadingState } from "./types";
 import { localizeDateTime } from "./helpers";
 import {
@@ -182,12 +182,13 @@ function DisplayImages(props: {
       console.log("Getting images from server");
       const imagesPromiseArr = props.imageIds.map(async (id: string) => {
         // TODO: better error handling if getImage fails
-        let objectURL = "";
-        const response = await getImage(id);
-        if (response) {
-          objectURL = URL.createObjectURL(response.data);
-        }
-        return objectURL;
+        // let objectURL = "";
+        // const response = await getImage(id);
+        // if (response) {
+        //   objectURL = URL.createObjectURL(response.data);
+        // }
+        // return objectURL;
+        return "";
       });
       Promise.all(imagesPromiseArr)
         .then((response) => {

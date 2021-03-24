@@ -7,7 +7,6 @@ import {
   ICategory,
   IGetProjectResponse,
   IProjectResponse,
-  IHomeProject,
   IPostProjectResponse,
   ICreateProjectResponse,
   ICategoryResponse,
@@ -18,6 +17,7 @@ import {
   IProject,
   IBuildStep,
   IFile,
+  IHomeProject,
 } from "./types";
 
 // Configure the global level for aws storage.
@@ -28,36 +28,25 @@ const http = axios.create({
   baseURL: "https://localhost:5001/",
 });
 
-interface IProjectsResponse {
-  projects: IHomeProject[];
-}
-
-function getProjects() {
-  return http
-    .get<IHomeProject[]>("/api/projects", {
+async function getProjects() {
+  try {
+    const response = await http.get<IHomeProject[]>("/api/projects", {
       transformResponse: [
         // Manually map the response to a Typescript interface.
-        (response) => {
-          const projectResponse: IProjectsResponse = JSON.parse(response);
-          return projectResponse;
-        },
+        (response) => JSON.parse(response),
       ],
-    })
-    .then((response) => {
-      // handle success
-      console.log(response);
-      return response;
-    })
-    .catch((error) => {
-      // handle error
-      console.log(error);
-      return null;
     });
+
+    console.log(response);
+    return response;
+  } catch (error) {
+    console.log(error);
+  }
 }
 
-function getProject(id: string) {
-  return http
-    .get<IProjectResponse>("/api/projects/" + id, {
+async function getProject(id: string) {
+  try {
+    const response = await http.get<IProjectResponse>("/api/projects/" + id, {
       transformResponse: [
         // Manually map the response to a Typescript interface.
         (response) => {
@@ -65,17 +54,13 @@ function getProject(id: string) {
           return projectResponse;
         },
       ],
-    })
-    .then((response) => {
-      // handle success
-      console.log(response);
-      return response;
-    })
-    .catch((error) => {
-      // handle error
-      console.log(error);
-      return null;
     });
+
+    console.log(response);
+    return response;
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 async function createProject(project: IProject) {
@@ -83,9 +68,8 @@ async function createProject(project: IProject) {
 
   // Upload File to S3
   const s3FileUpload = async (file: File) => {
-    const fileName = uuid() + "-" + file.name;
     try {
-      const result: any = await Storage.put(fileName, file, {
+      const result: any = await Storage.put(file.name, file, {
         level: "protected",
         contentType: file.type,
       });
@@ -140,14 +124,15 @@ async function createProject(project: IProject) {
     s3FilesUpload(project.uploadedFiles, false)
   );
 
+  const newFileList = projectImageObjList.concat(projectFileObjList);
+
   const newProject = {
     title: project.title,
     description: project.description,
     categoryId: project.categoryId,
     userId: globalState.identityId.value,
     buildSteps: buildSteps,
-    images: projectImageObjList,
-    files: projectFileObjList,
+    files: newFileList,
   };
 
   try {
@@ -188,18 +173,6 @@ async function getProjectCategories() {
       ],
     });
     return cats;
-  } catch (err) {
-    console.log(err);
-    return null;
-  }
-}
-
-async function getImage(id: string) {
-  try {
-    const image = await http.get("api/images/" + id, {
-      responseType: "blob",
-    });
-    return image;
   } catch (err) {
     console.log(err);
     return null;
@@ -299,7 +272,6 @@ export {
   getProjects,
   getProject,
   getProjectCategories,
-  getImage,
   getUser,
   updateUser,
   userExists,

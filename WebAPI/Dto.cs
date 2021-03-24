@@ -45,6 +45,12 @@ namespace WebAPI.Dto
         public List<BuildStepDto> BuildSteps { get; set; }
     }
 
+    public class BasicUserDto
+    {
+        public string IdentityId { get; set; }
+        public string Username { get; set; }
+    }
+
     public class UserDto
     {
         [Required]
@@ -70,9 +76,12 @@ namespace WebAPI.Dto
 
     public class GetProjectsDto
     {
+        public int Id { get; set; }
         public string Title { get; set; }
+        public string Category { get; set; }
         public FileDto Image { get; set; }
-        public UserDto User { get; set; }
+        public BasicUserDto User { get; set; }
+
     }
 
     public class GetProjectDto
