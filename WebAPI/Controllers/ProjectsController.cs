@@ -95,8 +95,11 @@ namespace WebAPI.Controllers
                 .Include(p => p.Category)
                 .Include(p => p.User)
                 .Include(p => p.Files)
-                .Include(p => p.BuildSteps)
-                .FirstOrDefaultAsync(p => p.Id == id);
+                .Include(p => p.BuildSteps).ThenInclude(bs => bs.Files)
+                .Where(p => p.Id == id)
+                .OrderBy(p => p.Id)
+                .AsSplitQuery()
+                .FirstOrDefaultAsync();
 
                 // Map User to UserDto
                 var userDto = new UserDto()
@@ -104,7 +107,6 @@ namespace WebAPI.Controllers
                     //Id = project.User.Id,
                     IdentityId = project.User.IdentityId, // TODO: check this
                     Username = project.User.Username,
-                    AvatarPath = "TODO"
                 };
 
                 var buildStepList = new List<BuildStepDto>();
@@ -116,6 +118,8 @@ namespace WebAPI.Controllers
                         Description = buildStep.Description,
                         Files = MapFileDtos(buildStep.Files, project.User.IdentityId),
                     };
+
+                    buildStepList.Add(buildStepDto);
                 }
 
                 // Map Project to GetProjectDto
@@ -124,8 +128,11 @@ namespace WebAPI.Controllers
                     Title = project.Title,
                     Description = project.Description,
                     Category = project.Category.Name,
+                    CreatedAt = project.CreatedAt,
+                    EditedAt = project.EditedAt,
                     User = userDto,
                     Files = MapFileDtos(project.Files, project.User.IdentityId),
+                    BuildSteps = buildStepList,
                 };
 
                 if (project == null)

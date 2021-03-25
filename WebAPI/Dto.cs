@@ -57,7 +57,6 @@ namespace WebAPI.Dto
         public string IdentityId { get; set; }
         [Required]
         public string Username { get; set; }
-        public string AvatarPath { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
 
@@ -90,6 +89,8 @@ namespace WebAPI.Dto
         public string Description { get; set; }
         public string Category { get; set; }
         public int? CategoryId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime EditedAt { get; set; }
         public UserDto User { get; set; }
         public List<FileDto> Files { get; set; }
         public List<BuildStepDto> BuildSteps { get; set; }

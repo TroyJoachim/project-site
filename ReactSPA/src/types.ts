@@ -15,6 +15,8 @@ export interface IProject {
   description: string;
   category: string;
   categoryId: number;
+  createdAt: string;
+  editedAt: string;
   buildSteps: IBuildStep[];
   images: IFile[];
   uploadedImages: File[];
@@ -37,7 +39,7 @@ export interface IBuildStep {
   description: string;
   images: IFile[];
   uploadedImages: File[];
-  files: File[];
+  files: IFile[];
   uploadedFiles: File[];
 }
 
@@ -119,12 +121,6 @@ export interface IUser {
   lastName?: string;
   avatarImgKey?: string;
   projects: string[] | null;
-}
-
-export enum LoadingState {
-  Loading,
-  Completed,
-  Failed,
 }
 
 export interface ICreateUser {

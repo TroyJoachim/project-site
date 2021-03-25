@@ -14,8 +14,9 @@ import CommentCard from "./CommentCard";
 import ReactHtmlParser from "react-html-parser";
 import { PageSideNav, SideNavType } from "./PageSideNav";
 import { getProject } from "./agent";
-import { IFile, IProjectModel, IBuildStepModel, LoadingState } from "./types";
-import { localizeDateTime } from "./helpers";
+import { IFile, IProject, IBuildStep, IUser } from "./types";
+import { localizeDateTime, downloadBlob, humanFileSize } from "./helpers";
+import { Storage } from "aws-amplify";
 import {
   Link,
   Switch,
@@ -36,53 +37,39 @@ function defaultCategory(url: any, pathname: string) {
 }
 
 function Project(props: any) {
-  const emptyProject: IProjectModel = {
-    id: "",
-    name: "",
-    subcategory_id: "",
-    subcategory: "", // Temporary, need to update api to subcategory_id
-    description: "",
-    creation_datetime: "",
-    image_ids: [],
-    image_urls: [],
-    file_attachments: [],
-    build_steps: [],
+  const initUser: IUser = {
+    username: "",
+    identityId: "",
+    firstName: "",
+    lastName: "",
+    avatarImgKey: "",
+    projects: null,
   };
-  const project = useHookstate<IProjectModel>(emptyProject);
+
+  const initProject: IProject = {
+    id: 0,
+    title: "",
+    description: "",
+    category: "",
+    categoryId: 0,
+    createdAt: "",
+    editedAt: "",
+    images: [],
+    uploadedImages: [],
+    files: [],
+    uploadedFiles: [],
+    buildSteps: [],
+    user: initUser,
+  };
+
+  const project = useHookstate<IProject>(initProject);
 
   useEffect(() => {
     getProject(props.match.params.id).then((response) => {
       if (!response) return;
       if (response.status === 200 && response.data) {
-        const p = response.data;
-
-        // Convert build step response into page model
-        const buildStepPromiseArr = p.build_steps.map(async (bs) => {
-          return {
-            order: 0,
-            name: bs.name,
-            description: bs.description,
-            image_ids: bs.image_ids,
-            image_urls: [],
-            file_attachments: bs.file_attachments,
-          };
-        });
-
-        Promise.all(buildStepPromiseArr).then((buildSteps) => {
-          const convertProject = {
-            id: p.id,
-            name: p.name,
-            subcategory_id: p.subcategory_id,
-            subcategory: p.subcategory,
-            description: p.description,
-            creation_datetime: p.creation_datetime,
-            image_ids: p.image_ids,
-            image_urls: [],
-            file_attachments: p.file_attachments,
-            build_steps: buildSteps,
-          };
-          project.set(convertProject);
-        });
+        // Set the value in state
+        project.set(response.data);
       }
     });
   }, []); // Note: Empty array at the end ensures that this is only performed once during mount
@@ -90,8 +77,28 @@ function Project(props: any) {
   return <MainContentArea project={project} />;
 }
 
-function MainContentArea(props: { project: State<IProjectModel> }) {
+function MainContentArea(props: { project: State<IProject> }) {
   let { path } = useRouteMatch();
+
+  // Checks if there are any files and if they are files and not images.
+  const filesDisabled = () => {
+    const filesFound =
+      props.project.files.filter((f) => f.isImage.value === false).length > 0;
+
+    if (props.project.files == null && !filesFound) {
+      return true;
+    }
+    return false;
+  };
+
+  // Checks if there are any build steps
+  const buildLogDisabled = () => {
+    const oneBuildStep = props.project.buildSteps.length > 0;
+    if (props.project.buildSteps && !oneBuildStep) {
+      return true;
+    }
+    return false;
+  };
 
   return (
     <Container fluid className="container-xxl">
@@ -101,15 +108,15 @@ function MainContentArea(props: { project: State<IProjectModel> }) {
           sideNavType={SideNavType.Project}
         />
         <Col lg={8} className="ms-lg-auto px-md-4">
-          <div className="d-flex flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-            <h2>{props.project.name.get()}</h2>
-            <div className="ml-auto">
+          <div className="pt-3 pb-2 mb-3">
+            <h4>{props.project.title.get()}</h4>
+            <div>
               Created By: <a href="#">Troy Joachim</a> on{" "}
-              {localizeDateTime(props.project.creation_datetime.get())}
+              {localizeDateTime(props.project.createdAt.get())}
               <Button
                 variant="primary"
                 size="sm"
-                className="ml-2 mb-2"
+                className="float-right"
                 as={Link}
                 to={"/edit-project/" + props.project.id.get()}
               >
@@ -119,13 +126,10 @@ function MainContentArea(props: { project: State<IProjectModel> }) {
           </div>
 
           <Card>
-            <DisplayImages
-              imageIds={props.project.image_ids.get()}
-              imageUrls={props.project.image_urls}
-            />
+            <DisplayImages images={props.project.files} />
           </Card>
 
-          <PillNav />
+          <PillNav filesDisabled={filesDisabled()} buildLogDisabled={buildLogDisabled()} />
 
           <Switch>
             <Route exact path={path}>
@@ -156,12 +160,16 @@ function MainContentArea(props: { project: State<IProjectModel> }) {
               <Card>
                 <Card.Body>
                   <h3 className="border-bottom pb-2">Project Files</h3>
-                  <FileList files={props.project.file_attachments.get()} />
+                  <FileList files={props.project.files.value} />
                 </Card.Body>
               </Card>
             </Route>
             <Route path={`${path}/build-log`}>
-              <BuildLog buildSteps={props.project.build_steps} />
+              {props.project.buildSteps.value ? (
+                <BuildLog buildSteps={props.project.buildSteps} />
+              ) : (
+                <></>
+              )}
             </Route>
           </Switch>
         </Col>
@@ -170,39 +178,8 @@ function MainContentArea(props: { project: State<IProjectModel> }) {
   );
 }
 
-function DisplayImages(props: {
-  imageIds: string[];
-  imageUrls: State<string[]>;
-}) {
-  const state = useHookstate(props.imageUrls);
-  const loadingState = useHookstate(LoadingState.Loading);
-  useEffect(() => {
-    // Get images if it's not already saved in state.
-    if (state.get().length === 0) {
-      console.log("Getting images from server");
-      const imagesPromiseArr = props.imageIds.map(async (id: string) => {
-        // TODO: better error handling if getImage fails
-        // let objectURL = "";
-        // const response = await getImage(id);
-        // if (response) {
-        //   objectURL = URL.createObjectURL(response.data);
-        // }
-        // return objectURL;
-        return "";
-      });
-      Promise.all(imagesPromiseArr)
-        .then((response) => {
-          state.set(response);
-          loadingState.set(LoadingState.Completed);
-        })
-        .catch((err) => {
-          console.log("DisplayImages getImage error:", err);
-          loadingState.set(LoadingState.Failed);
-        });
-    }
-    console.log("Already have images");
-    loadingState.set(LoadingState.Completed);
-  }, [props.imageIds]);
+function DisplayImages(props: { images: State<IFile[]> }) {
+  const state = useHookstate(props.images);
 
   // Image style that keeps all the different size images inside the parent div.
   // Need to make sure that the parent div is set to position relative.
@@ -219,49 +196,57 @@ function DisplayImages(props: {
     margin: "auto",
   } as React.CSSProperties;
 
-  const loadingStyle = {
-    margin: 0,
-    position: "absolute",
-    top: "50%",
-    left: "45%",
-    msTransform: "translateY(-50%)",
-    transform: "translateY(-50%)",
-    color: "#fff",
-  } as React.CSSProperties;
+  // const loadingStyle = {
+  //   margin: 0,
+  //   position: "absolute",
+  //   top: "50%",
+  //   left: "45%",
+  //   msTransform: "translateY(-50%)",
+  //   transform: "translateY(-50%)",
+  //   color: "#fff",
+  // } as React.CSSProperties;
 
-  if (loadingState.get() === LoadingState.Loading) {
-    return (
-      <div
-        className="bg-secondary"
-        style={{ height: "400px", position: "relative" }}
-      >
-        <div style={loadingStyle}>
-          <Spinner className="m-1" animation="grow" />
-          <Spinner className="m-1" animation="grow" />
-          <Spinner className="m-1" animation="grow" />
-        </div>
-      </div>
-    );
-  }
-  if (loadingState.get() === LoadingState.Failed) {
-    return <div>Error loading image</div>;
-  }
-  if (state.get().length > 1) {
+  const imageUrl = (identityId: string, key: string) =>
+    "https://d1sam1rvgl833u.cloudfront.net/fit-in/0x400/protected/" +
+    identityId +
+    "/" +
+    key;
+
+  // if (isLoading.value) {
+  //   return (
+  //     <div
+  //       className="bg-secondary"
+  //       style={{ height: "400px", position: "relative" }}
+  //     >
+  //       <div style={loadingStyle}>
+  //         <Spinner className="m-1" animation="grow" />
+  //         <Spinner className="m-1" animation="grow" />
+  //         <Spinner className="m-1" animation="grow" />
+  //       </div>
+  //     </div>
+  //   );
+  // }
+  if (state.value && state.value.length > 1) {
     return (
       <Carousel>
-        {state.get().map((imageUrl) => (
-          <Carousel.Item>
-            <div
-              className="bg-secondary"
-              style={{
-                height: "400px",
-                position: "relative",
-              }}
-            >
-              <img src={imageUrl} style={imgStyle} />
-            </div>
-          </Carousel.Item>
-        ))}
+        {state
+          .filter((file) => file.isImage.value === true)
+          .map((file) => (
+            <Carousel.Item>
+              <div
+                className="bg-secondary"
+                style={{
+                  height: "400px",
+                  position: "relative",
+                }}
+              >
+                <img
+                  src={imageUrl(file.identityId.value, file.key.value)}
+                  style={imgStyle}
+                />
+              </div>
+            </Carousel.Item>
+          ))}
       </Carousel>
     );
   } else {
@@ -270,13 +255,20 @@ function DisplayImages(props: {
         className="bg-secondary"
         style={{ height: "400px", position: "relative" }}
       >
-        <img src={state[0].get()} style={imgStyle} />
+        <img
+          src={
+            state.length > 0
+              ? imageUrl(state[0].get().identityId, state[0].get().key)
+              : ""
+          }
+          style={imgStyle}
+        />
       </div>
     );
   }
 }
 
-function PillNav() {
+function PillNav(props: { filesDisabled: boolean; buildLogDisabled: boolean }) {
   let { url } = useRouteMatch();
   const location = useLocation();
 
@@ -312,6 +304,7 @@ function PillNav() {
           as={Link}
           to={`${url}/files`}
           replace
+          disabled={props.filesDisabled}
         >
           files
         </Nav.Link>
@@ -322,6 +315,7 @@ function PillNav() {
           as={Link}
           to={`${url}/build-log`}
           replace
+          disabled={props.buildLogDisabled}
         >
           Build Log
         </Nav.Link>
@@ -340,7 +334,7 @@ function PillNav() {
   );
 }
 
-function BuildLog(props: { buildSteps: State<IBuildStepModel[]> }) {
+function BuildLog(props: { buildSteps: State<IBuildStep[]> }) {
   const buildStepArr = props.buildSteps.map((bs, index) => (
     <ImageCard key={index} buildStep={bs} />
   ));
@@ -351,7 +345,7 @@ function BuildLog(props: { buildSteps: State<IBuildStepModel[]> }) {
 function Description(props: { text: string }) {
   function parseHtml() {
     if (props.text) {
-      const json = JSON.parse(props.text);
+      const json = JSON.parse(atob(props.text));
       const html = draftToHtml(json);
       return ReactHtmlParser(html);
     } else {
@@ -365,6 +359,48 @@ function FileList(props: { files: IFile[] }) {
   // Hides the table if there are no files
   const tableHidden = props.files.length > 0 ? "" : "d-none";
 
+  async function downloadFile(
+    key: string,
+    identityId: string,
+    fileName: string
+  ) {
+    try {
+      const result: any = await Storage.get(key, {
+        level: "protected",
+        identityId: identityId,
+        download: true,
+      });
+
+      downloadBlob(result.Body, fileName);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  function fileList() {
+    const tableRow = props.files
+      .filter((file) => file.isImage === false)
+      .map((file: IFile, i) => (
+        <tr key={i}>
+          <td>{file.fileName}</td>
+          <td>{humanFileSize(file.size)}</td>
+          <td>
+            <Button
+              variant="success"
+              size="sm"
+              className="float-right"
+              onClick={() =>
+                downloadFile(file.key, file.identityId, file.fileName)
+              }
+            >
+              <i className="fas fa-download"></i>
+            </Button>
+          </td>
+        </tr>
+      ));
+    return tableRow;
+  }
+
   return (
     <div className="mt-4">
       <Table responsive hover size="sm" className={tableHidden}>
@@ -375,7 +411,7 @@ function FileList(props: { files: IFile[] }) {
             <th className="text-right">Download</th>
           </tr>
         </thead>
-        {/* <tbody>{fileList()}</tbody> */}
+        <tbody>{fileList()}</tbody>
       </Table>
       <Button variant="primary" className={"float-right " + tableHidden}>
         <i className="fas fa-download mr-1"></i>Download all
@@ -384,7 +420,7 @@ function FileList(props: { files: IFile[] }) {
   );
 }
 
-function ImageCard(props: { buildStep: State<IBuildStepModel> }) {
+function ImageCard(props: { buildStep: State<IBuildStep> }) {
   let category = useHookstate("img-desc");
 
   function imageCardCategory() {
@@ -393,9 +429,7 @@ function ImageCard(props: { buildStep: State<IBuildStepModel> }) {
         return <ImageCardComments />;
 
       case "img-files":
-        return (
-          <ImageCardFiles files={props.buildStep.file_attachments.get()} />
-        );
+        return <ImageCardFiles files={props.buildStep.files.get()} />;
 
       default:
         return <Description text={props.buildStep.description.get()} />;
@@ -404,10 +438,7 @@ function ImageCard(props: { buildStep: State<IBuildStepModel> }) {
 
   return (
     <Card className="mb-5">
-      <DisplayImages
-        imageIds={props.buildStep.image_ids.get()}
-        imageUrls={props.buildStep.image_urls}
-      />
+      <DisplayImages images={props.buildStep.files} />
       <Card.Body>
         <Nav variant="tabs" className="my-2" defaultActiveKey="img-desc">
           <Nav.Item>

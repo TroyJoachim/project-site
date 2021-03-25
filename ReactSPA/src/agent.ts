@@ -1,6 +1,6 @@
 import { Storage } from "aws-amplify";
 import axios, { AxiosResponse } from "axios";
-import { fileDownload, getUserToken } from "./helpers";
+import { getUserToken } from "./helpers";
 import { uuid } from "uuidv4";
 import { globalState } from "./globalState";
 import {
@@ -46,16 +46,7 @@ async function getProjects() {
 
 async function getProject(id: string) {
   try {
-    const response = await http.get<IProjectResponse>("/api/projects/" + id, {
-      transformResponse: [
-        // Manually map the response to a Typescript interface.
-        (response) => {
-          const projectResponse: IGetProjectResponse = JSON.parse(response);
-          return projectResponse;
-        },
-      ],
-    });
-
+    const response = await http.get("/api/projects/" + id);
     console.log(response);
     return response;
   } catch (error) {
@@ -69,7 +60,8 @@ async function createProject(project: IProject) {
   // Upload File to S3
   const s3FileUpload = async (file: File) => {
     try {
-      const result: any = await Storage.put(file.name, file, {
+      const fileName = uuid() + "-" + file.name;
+      const result: any = await Storage.put(fileName, file, {
         level: "protected",
         contentType: file.type,
       });
@@ -104,12 +96,13 @@ async function createProject(project: IProject) {
       s3FilesUpload(step.uploadedFiles, false)
     );
 
+    const newFileList = bsImageObjList.concat(bsFileAttachmentObjList);
+
     // Return the build step
     return {
       title: step.title,
       description: step.description,
-      images: bsImageObjList,
-      files: bsFileAttachmentObjList,
+      files: newFileList,
     };
   }
 

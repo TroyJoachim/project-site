@@ -13,7 +13,7 @@ import { Auth } from "aws-amplify";
  *
  * @return Formatted string.
  */
-function humanFileSize(bytes: number, si = false, dp = 1) {
+ export function humanFileSize(bytes: number, si = false, dp = 1) {
   const thresh = si ? 1000 : 1024;
 
   if (Math.abs(bytes) < thresh) {
@@ -37,52 +37,8 @@ function humanFileSize(bytes: number, si = false, dp = 1) {
   return bytes.toFixed(dp) + " " + units[u];
 }
 
-// Source: https://github.com/kennethjiang/js-file-download
-function fileDownload(
-  data: string | ArrayBuffer | ArrayBufferView | Blob,
-  filename: string,
-  mime?: string,
-  bom?: string | Uint8Array
-): void {
-  var blobData = typeof bom !== "undefined" ? [bom, data] : [data];
-  var blob = new Blob(blobData, { type: mime || "application/octet-stream" });
-  if (typeof window.navigator.msSaveBlob !== "undefined") {
-    // IE workaround for "HTML7007: One or more blob URLs were
-    // revoked by closing the blob for which they were created.
-    // These URLs will no longer resolve as the data backing
-    // the URL has been freed."
-    window.navigator.msSaveBlob(blob, filename);
-  } else {
-    var blobURL =
-      window.URL && window.URL.createObjectURL
-        ? window.URL.createObjectURL(blob)
-        : window.webkitURL.createObjectURL(blob);
-    var tempLink = document.createElement("a");
-    tempLink.style.display = "none";
-    tempLink.href = blobURL;
-    tempLink.setAttribute("download", filename);
-
-    // Safari thinks _blank anchor are pop ups. We only want to set _blank
-    // target if the browser does not support the HTML5 download attribute.
-    // This allows you to download files in desktop safari if pop up blocking
-    // is enabled.
-    if (typeof tempLink.download === "undefined") {
-      tempLink.setAttribute("target", "_blank");
-    }
-
-    document.body.appendChild(tempLink);
-    tempLink.click();
-
-    // Fixes "webkit blob resource error 1"
-    setTimeout(function () {
-      document.body.removeChild(tempLink);
-      window.URL.revokeObjectURL(blobURL);
-    }, 200);
-  }
-}
-
 // Converts IFile[] to File[]
-function convertFiles(fileAttachments: IFile[]): File[] {
+export function convertFiles(fileAttachments: IFile[]): File[] {
   return fileAttachments.map((fa) => {
     // TODO: add file size
     return new File([], fa.fileName);
@@ -90,7 +46,7 @@ function convertFiles(fileAttachments: IFile[]): File[] {
 }
 
 // Gets the users JWT token from the global state
-function getUserToken() {
+export function getUserToken() {
   let token = null;
   const session = globalState.session.get();
   if (session) {
@@ -100,7 +56,7 @@ function getUserToken() {
 }
 
 // TODO: add to global state like the one above.
-function getIdentityId() {
+export function getIdentityId() {
   return Auth.currentCredentials().then((result) => {
     return result.identityId;
   });
@@ -108,19 +64,19 @@ function getIdentityId() {
 
 // Helper to remove empty values from an array in Typescript
 // Source: https://stackoverflow.com/questions/43118692/typescript-filter-out-nulls-from-an-array
-function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
+export function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
   if (value === null || value === undefined) return false;
   const testDummy: TValue = value;
   return true;
 }
 
 // Converts UTC DateTime to localized date time
-function localizeDateTime(utc: string) {
+export function localizeDateTime(utc: string) {
   const date = new Date(utc);
-  return date.toLocaleString(navigator.language, { timeZone: "UTC" });
+  return date.toLocaleDateString(navigator.language, { timeZone: "UTC" });
 }
 
-function errorMessage(err: any) {
+export function errorMessage(err: any) {
   if (typeof err === "string") {
     return err;
   }
@@ -128,7 +84,7 @@ function errorMessage(err: any) {
 }
 
 // Converts the base64 uri into a file
-function dataURLtoFile(dataurl: string, filename: string) {
+export function dataURLtoFile(dataurl: string, filename: string) {
   let arr = dataurl.split(",");
   let f = arr[0];
   if (!f) return;
@@ -146,14 +102,19 @@ function dataURLtoFile(dataurl: string, filename: string) {
   return new File([u8arr], filename, { type: mime });
 }
 
-export {
-  humanFileSize,
-  fileDownload,
-  convertFiles,
-  getUserToken,
-  getIdentityId,
-  notEmpty,
-  localizeDateTime,
-  errorMessage,
-  dataURLtoFile,
-};
+// Source: https://docs.amplify.aws/lib/storage/download/q/platform/js#file-download-option
+export function downloadBlob(blob: any, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename || "download";
+  const clickHandler = () => {
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      a.removeEventListener("click", clickHandler);
+    }, 150);
+  };
+  a.addEventListener("click", clickHandler, false);
+  a.click();
+  return a;
+}

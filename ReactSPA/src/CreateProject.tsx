@@ -28,12 +28,14 @@ function CreateProject() {
     projects: null,
   };
 
-  const initModel: IProject = {
+  const initProject: IProject = {
     id: 0,
     title: "",
     description: "",
     category: "",
     categoryId: 0,
+    createdAt: "",
+    editedAt: "",
     images: [],
     uploadedImages: [],
     files: [],
@@ -43,7 +45,7 @@ function CreateProject() {
   };
 
   // Hookstate
-  const project = useHookstate<IProject>(initModel);
+  const project = useHookstate<IProject>(initProject);
   const showModal = useHookstate(false);
   const modalSuccess = useHookstate(false);
   const projectCategories = useHookstate<ICategory[]>([]);
@@ -142,7 +144,7 @@ function CreateProject() {
           if (response && response.status === 201) {
             console.log(response.status);
             modalSuccess.set(true);
-            modalRoute.set("/project/" + response.data.project_id);
+            modalRoute.set("/project/" + response.data.id);
           } else {
             // TODO: handle error
             modalSuccess.set(false);
@@ -175,7 +177,6 @@ function CreateProject() {
   }
 
   function handleDropdownSelect(event: React.ChangeEvent<HTMLSelectElement>) {
-    console.log(event.target.value);
     project.categoryId.set(parseInt(event.target.value));
   }
 

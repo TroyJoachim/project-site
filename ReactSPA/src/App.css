@@ -45,6 +45,14 @@ fieldset[disabled] .btn-mint.active {
   background-color: #ffffff;
 }
 
+.btn-group-xs > .btn,
+.btn-xs {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border-radius: 0.2rem;
+}
+
 /* Application loading screen */
 .loading-container {
   height: 100vh;
