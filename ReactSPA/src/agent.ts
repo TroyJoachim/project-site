@@ -12,7 +12,6 @@ import {
   ICategoryResponse,
   ICreateUser,
   IUser,
-  IAxiosResponse,
   IUpdateUserResponse,
   IProject,
   IBuildStep,
@@ -28,13 +27,13 @@ const http = axios.create({
   baseURL: "https://localhost:5001/",
 });
 
-async function getProjects() {
+export async function getProjects() {
   try {
-    const response = await http.get<IHomeProject[]>("/api/projects", {
-      transformResponse: [
-        // Manually map the response to a Typescript interface.
-        (response) => JSON.parse(response),
-      ],
+    const response = await http.get("/api/projects", {
+      headers: {
+        Authorization: `Bearer ${getUserToken()}`,
+        "Content-type": "application/json",
+      },
     });
 
     console.log(response);
@@ -44,7 +43,7 @@ async function getProjects() {
   }
 }
 
-async function getProject(id: string) {
+export async function getProject(id: string) {
   try {
     const response = await http.get("/api/projects/" + id);
     console.log(response);
@@ -54,7 +53,7 @@ async function getProject(id: string) {
   }
 }
 
-async function createProject(project: IProject) {
+export async function createProject(project: IProject) {
   console.log(project);
 
   // Upload File to S3
@@ -154,7 +153,7 @@ async function createProject(project: IProject) {
   }
 }
 
-async function getProjectCategories() {
+export async function getProjectCategories() {
   try {
     const cats = await http.get<ICategory[]>("/api/categories", {
       // Manually map the response to a Typescript interface.
@@ -172,7 +171,7 @@ async function getProjectCategories() {
   }
 }
 
-async function getUser(sub: string) {
+export async function getUser(sub: string) {
   try {
     const response = await http.get<IUser>("/api/users/" + sub, {
       headers: {
@@ -180,12 +179,7 @@ async function getUser(sub: string) {
         Authorization: `Bearer ${getUserToken()}`,
       },
       // Manually map the response to a Typescript interface.
-      transformResponse: [
-        (response: any) => {
-          const resp: IAxiosResponse = JSON.parse(response);
-          return resp;
-        },
-      ],
+      transformResponse: [(response: any) => JSON.parse(response)],
     });
     return response;
   } catch (err) {
@@ -194,12 +188,13 @@ async function getUser(sub: string) {
   }
 }
 
-async function createUser(id: string, username: string) {
+export async function createUser(id: string, username: string) {
   try {
     // Create a user opject to send to the api
     const newUser = {
       identityId: id,
       username: username,
+      sub: globalState.sub.value
     };
 
     const response = await http.post<ICreateUser>("/api/users", newUser, {
@@ -208,12 +203,7 @@ async function createUser(id: string, username: string) {
         Authorization: `Bearer ${getUserToken()}`,
       },
       // Manually map the response to a Typescript interface.
-      transformResponse: [
-        (response: any) => {
-          const resp: IAxiosResponse = JSON.parse(response);
-          return resp;
-        },
-      ],
+      transformResponse: [(response: any) => JSON.parse(response)],
     });
     return response;
   } catch (err) {
@@ -222,7 +212,7 @@ async function createUser(id: string, username: string) {
   }
 }
 
-async function updateUser(user: IUser) {
+export async function updateUser(user: IUser) {
   console.log(user);
   try {
     const response = await http.put(
@@ -242,7 +232,7 @@ async function updateUser(user: IUser) {
   }
 }
 
-async function userExists(identityId: string) {
+export async function userExists(identityId: string) {
   try {
     const response = await http.get("/api/users/userexists/" + identityId, {
       headers: {
@@ -258,14 +248,40 @@ async function userExists(identityId: string) {
   }
 }
 
-export {
-  http,
-  createProject,
-  createUser,
-  getProjects,
-  getProject,
-  getProjectCategories,
-  getUser,
-  updateUser,
-  userExists,
-};
+export async function likeProject(projectId: number, identityId: string) {
+  try {
+    const response = await http.post(
+      "/api/likes",
+      JSON.stringify({ projectId, identityId }),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+      }
+    );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function unlikeProject(projectId: number, identityId: string) {
+  try {
+    const response = await http.put(
+      "/api/likes",
+      JSON.stringify({ projectId, identityId }),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+      }
+    );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}

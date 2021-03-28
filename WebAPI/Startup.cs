@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -7,10 +8,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using WebAPI.Models;
 
@@ -29,8 +35,40 @@ namespace WebAPI
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors();
+
+            var Region = Configuration["AWSCognito:Region"];
+            var PoolId = Configuration["AWSCognito:PoolId"];
+
+            services
+                .AddAuthentication(options =>
+                {
+                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                })
+                .AddJwtBearer(options =>
+                {
+                    options.SaveToken = true;
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKeyResolver = (s, securityToken, identifier, parameters) =>
+                        {
+                            // Get JsonWebKeySet from AWS
+                            var json = new WebClient().DownloadString(parameters.ValidIssuer + "/.well-known/jwks.json");
+                            // Serialize the result
+                            return JsonConvert.DeserializeObject<JsonWebKeySet>(json).Keys;
+                        },
+                        ValidateIssuer = true,
+                        ValidIssuer = $"https://cognito-idp.{Region}.amazonaws.com/{PoolId}",
+                        ValidateLifetime = true,
+                        LifetimeValidator = (before, expires, token, param) => expires > DateTime.UtcNow,
+                        ValidateAudience = false,
+                    };
+                    options.Audience = "";
+                });
+
             services.AddControllers().AddNewtonsoftJson(options =>
-                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore
             );
             services.AddDbContext<ApplicationDbContext>(
                 options => options.UseNpgsql("Host=localhost;Port=5432;Database=main;Username=postgres;Password=admin"));
@@ -64,6 +102,7 @@ namespace WebAPI
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

@@ -16,6 +16,31 @@ namespace WebAPI.Models
         {
         }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // Configure the many-to-many relationship for Likes
+            modelBuilder.Entity<Project>()
+                .HasMany(p => p.UserLikes)
+                .WithMany(u => u.ProjectLikes)
+                .UsingEntity<Like>(
+                    j => j.HasOne(l => l.User).WithMany(u => u.Likes),
+                    j => j.HasOne(l => l.Project).WithMany(p => p.Likes));
+
+            // Configure the many-to-many relationship for Collects
+            modelBuilder.Entity<Project>()
+                .HasMany(p => p.UserCollects)
+                .WithMany(u => u.ProjectCollects)
+                .UsingEntity<Collect>(
+                    j => j.HasOne(c => c.User).WithMany(u => u.Collects),
+                    j => j.HasOne(c => c.Project).WithMany(p => p.Collects));
+
+            // Explicitly configure the one-to-many relationship between User and Project
+            // For some reason EF had an issue after I added the Likes and Collects above
+            modelBuilder.Entity<Project>()
+                .HasOne(p => p.User)
+                .WithMany(u => u.Projects);
+        }
+
         public DbSet<Project> Projects { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Category> Categories { get; set; }
@@ -39,6 +64,12 @@ namespace WebAPI.Models
         public Category Category { get; set; }
         public ICollection<BuildStep> BuildSteps { get; set; }
         public ICollection<Comment> Comments { get; set; }
+
+        public ICollection<User> UserLikes { get; set; }
+        public ICollection<Like> Likes { get; set; }
+
+        public ICollection<User> UserCollects { get; set; }
+        public ICollection<Collect> Collects { get; set; }
     }
 
     public class BuildStep
@@ -47,6 +78,7 @@ namespace WebAPI.Models
         [Required]
         public string Title { get; set; }
         public string Description { get; set; }
+        public int Order { get; set; }
 
         public Project Project { get; set; }
         public ICollection<File> Files { get; set; }
@@ -104,11 +136,19 @@ namespace WebAPI.Models
         [Required]
         public string IdentityId { get; set; }
         [Required]
+        public string Sub { get; set; }
+        [Required]
         public string Username { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string AvatarImgKey { get; set; }
 
         public ICollection<Project> Projects { get; set; }
+
+        public ICollection<Project> ProjectLikes { get; set; }
+        public ICollection<Like> Likes { get; set; }
+
+        public ICollection<Project> ProjectCollects { get; set; }
+        public ICollection<Collect> Collects { get; set; }
     }
 }

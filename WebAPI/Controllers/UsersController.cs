@@ -88,7 +88,6 @@ namespace WebAPI.Controllers
         }
 
         // POST: api/Users
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<UserDto>> PostUser(UserDto user)
         {
@@ -96,9 +95,10 @@ namespace WebAPI.Controllers
             var newUser = new User()
             {
                 IdentityId = user.IdentityId,
+                Sub = user.Sub,
                 Username = user.Username,
                 FirstName = user.FirstName,
-                LastName = user.LastName
+                LastName = user.LastName,
             };
 
             _context.Users.Add(newUser);

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +32,20 @@ namespace WebAPI.Controllers
         {
             try
             {
+                User user = null;
+
+                // Get the Sub claim from the JWT token
+                ClaimsIdentity identity = HttpContext.User.Identity as ClaimsIdentity;
+                if (identity != null)
+                {
+                    var sub = identity.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+                    if (sub != null)
+                    {
+                        // Find user by Sub. This is a unique id use by AWS Cognito
+                        user = await _context.Users.SingleOrDefaultAsync(u => u.Sub == sub.Value);
+                    }
+                }
+
                 var projectsDto = new List<GetProjectsDto>();
 
                 // Get projects from the database
@@ -37,6 +53,7 @@ namespace WebAPI.Controllers
                     .Include(p => p.User)
                     .Include(p => p.Category)
                     .Include(p => p.Files)
+                    .Include(p => p.UserLikes)
                     .ToListAsync();
 
                 // Map Project to ProjectDto and add it to the list
@@ -69,6 +86,7 @@ namespace WebAPI.Controllers
                         Id = project.Id,
                         Title = project.Title,
                         Category = project.Category.Name,
+                        Liked = user != null && project.UserLikes.Contains(user),
                         Image = newFileDto,
                         User = userDto,
                     };
@@ -116,6 +134,7 @@ namespace WebAPI.Controllers
                     {
                         Title = buildStep.Title,
                         Description = buildStep.Description,
+                        Order = buildStep.Order,
                         Files = MapFileDtos(buildStep.Files, project.User.IdentityId),
                     };
 
@@ -150,6 +169,7 @@ namespace WebAPI.Controllers
 
         // PUT: api/Projects/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        //[Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProject(int id, Project project)
         {
@@ -180,7 +200,7 @@ namespace WebAPI.Controllers
         }
 
         // POST: api/Projects
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        //[Authorize]
         [HttpPost]
         public async Task<ActionResult<ProjectDto>> PostProject(ProjectDto project)
         {
@@ -235,13 +255,14 @@ namespace WebAPI.Controllers
             }
             catch (Exception ex)
             {
-
-                throw;
+                _logger.LogError(ex.ToString());
+                return StatusCode(500);
             }
 
         }
 
         // DELETE: api/Projects/5
+        //[Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(int id)
         {

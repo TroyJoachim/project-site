@@ -184,8 +184,7 @@ function CreateProject() {
     <Container fluid className="container-xxl">
       <Row>
         <PageSideNav
-          //buildSteps={project.build_steps.map((bs) => bs.name)}
-          //state={project}
+          buildSteps={project.buildSteps}
           sideNavType={SideNavType.EditProject}
         />
         <Col lg={8}>

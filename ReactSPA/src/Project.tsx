@@ -104,7 +104,7 @@ function MainContentArea(props: { project: State<IProject> }) {
     <Container fluid className="container-xxl">
       <Row>
         <PageSideNav
-          //buildSteps={props.project.build_steps.map((bs) => bs.name)}
+          buildSteps={props.project.buildSteps}
           sideNavType={SideNavType.Project}
         />
         <Col lg={8} className="ms-lg-auto px-md-4">
@@ -129,7 +129,10 @@ function MainContentArea(props: { project: State<IProject> }) {
             <DisplayImages images={props.project.files} />
           </Card>
 
-          <PillNav filesDisabled={filesDisabled()} buildLogDisabled={buildLogDisabled()} />
+          <PillNav
+            filesDisabled={filesDisabled()}
+            buildLogDisabled={buildLogDisabled()}
+          />
 
           <Switch>
             <Route exact path={path}>

@@ -2,8 +2,9 @@ import React from "react";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Nav from "react-bootstrap/Nav";
-import { useHookstate, State, StateMethods } from "@hookstate/core";
+import { useHookstate, State } from "@hookstate/core";
 import { Link, useRouteMatch, useLocation } from "react-router-dom";
+import { IBuildStep } from "./types";
 
 export enum SideNavType {
   Project,
@@ -12,28 +13,23 @@ export enum SideNavType {
 }
 
 function PageSideNav(props: {
-  //buildSteps: StateMethods<string>[];
-  //state: State<ITempProject>;
+  buildSteps: State<IBuildStep[]>;
   sideNavType: SideNavType;
 }) {
+  const state = useHookstate(props.buildSteps);
   const menuOpen = useHookstate(false);
   const { url } = useRouteMatch();
   const location = useLocation();
 
   // Removes the dash if there is no description
-  function name(stepName: string): string {
-    if (stepName !== "") {
-      return " - " + stepName;
-    }
-    return "";
-  }
+  const name = (stepName: string, index: number) =>
+    stepName !== "" ? stepName : "Step " + (index + 1).toString();
 
-  // TODO: add step order back
-//   const steps = props.state.build_steps.map((step: StateMethods<ITempBuildStep>, index) => (
-//     <Nav.Link key={index} className="ml-4 border-left">
-//       Step {name(step.get().name)}
-//     </Nav.Link>
-//   ));
+  const steps = state.map((step, index) => (
+    <Nav.Link key={index} className="ml-4 border-left">
+      Step {name(step.title.value, index)}
+    </Nav.Link>
+  ));
 
   const openBtnStyle = {
     position: "fixed",
@@ -173,7 +169,7 @@ function PageSideNav(props: {
             >
               Build Log
             </Nav.Link>
-            {/* {steps} */}
+            {steps}
           </Nav>
         </div>
       </Col>

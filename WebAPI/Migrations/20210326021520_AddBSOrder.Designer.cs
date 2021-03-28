@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WebAPI.Models;
@@ -9,9 +10,10 @@ using WebAPI.Models;
 namespace WebAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210326021520_AddBSOrder")]
+    partial class AddBSOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,21 +67,6 @@ namespace WebAPI.Migrations
                     b.HasIndex("ParentId");
 
                     b.ToTable("Categories");
-                });
-
-            modelBuilder.Entity("WebAPI.Models.Collect", b =>
-                {
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("ProjectId", "UserId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Collect");
                 });
 
             modelBuilder.Entity("WebAPI.Models.Comment", b =>
@@ -149,21 +136,6 @@ namespace WebAPI.Migrations
                     b.ToTable("File");
                 });
 
-            modelBuilder.Entity("WebAPI.Models.Like", b =>
-                {
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("ProjectId", "UserId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Like");
-                });
-
             modelBuilder.Entity("WebAPI.Models.Project", b =>
                 {
                     b.Property<int>("Id")
@@ -220,10 +192,6 @@ namespace WebAPI.Migrations
                     b.Property<string>("LastName")
                         .HasColumnType("text");
 
-                    b.Property<string>("Sub")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("text");
@@ -249,25 +217,6 @@ namespace WebAPI.Migrations
                         .HasForeignKey("ParentId");
 
                     b.Navigation("Parent");
-                });
-
-            modelBuilder.Entity("WebAPI.Models.Collect", b =>
-                {
-                    b.HasOne("WebAPI.Models.Project", "Project")
-                        .WithMany("Collects")
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WebAPI.Models.User", "User")
-                        .WithMany("Collects")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Project");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("WebAPI.Models.Comment", b =>
@@ -296,25 +245,6 @@ namespace WebAPI.Migrations
                         .HasForeignKey("ProjectId");
 
                     b.Navigation("BuildStep");
-                });
-
-            modelBuilder.Entity("WebAPI.Models.Like", b =>
-                {
-                    b.HasOne("WebAPI.Models.Project", "Project")
-                        .WithMany("Likes")
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WebAPI.Models.User", "User")
-                        .WithMany("Likes")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Project");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("WebAPI.Models.Project", b =>
@@ -355,21 +285,13 @@ namespace WebAPI.Migrations
                 {
                     b.Navigation("BuildSteps");
 
-                    b.Navigation("Collects");
-
                     b.Navigation("Comments");
 
                     b.Navigation("Files");
-
-                    b.Navigation("Likes");
                 });
 
             modelBuilder.Entity("WebAPI.Models.User", b =>
                 {
-                    b.Navigation("Collects");
-
-                    b.Navigation("Likes");
-
                     b.Navigation("Projects");
                 });
 #pragma warning restore 612, 618

@@ -28,6 +28,7 @@ namespace WebAPI.Dto
         [Required]
         public string Title { get; set; }
         public string Description { get; set; }
+        public int Order { get; set; }
         public List<FileDto> Files { get; set; }
     }
 
@@ -56,6 +57,8 @@ namespace WebAPI.Dto
         [Required]
         public string IdentityId { get; set; }
         [Required]
+        public string Sub { get; set; }
+        [Required]
         public string Username { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
@@ -78,6 +81,7 @@ namespace WebAPI.Dto
         public int Id { get; set; }
         public string Title { get; set; }
         public string Category { get; set; }
+        public bool Liked { get; set; }
         public FileDto Image { get; set; }
         public BasicUserDto User { get; set; }
 
@@ -94,5 +98,11 @@ namespace WebAPI.Dto
         public UserDto User { get; set; }
         public List<FileDto> Files { get; set; }
         public List<BuildStepDto> BuildSteps { get; set; }
+    }
+
+    public class ProjectLikeDto
+    {
+        public int ProjectId { get; set; }
+        public string IdentityId { get; set; }
     }
 }
