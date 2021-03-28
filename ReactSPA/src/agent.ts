@@ -285,3 +285,41 @@ export async function unlikeProject(projectId: number, identityId: string) {
     return null;
   }
 }
+
+export async function collectProject(projectId: number, identityId: string) {
+  try {
+    const response = await http.post(
+      "/api/collects",
+      JSON.stringify({ projectId, identityId }),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+      }
+    );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function uncollectProject(projectId: number, identityId: string) {
+  try {
+    const response = await http.put(
+      "/api/collects",
+      JSON.stringify({ projectId, identityId }),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+      }
+    );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}

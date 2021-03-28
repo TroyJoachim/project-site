@@ -266,8 +266,8 @@ footer {
   display: inline-block;
 }
 
-.home-card-body {
-  padding: 1rem;
+.home-btn-group {
+  display: flex;
 }
 
 .card-avatar {

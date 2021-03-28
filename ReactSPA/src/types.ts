@@ -8,6 +8,7 @@ export interface IHomeProject {
   imageUrl: string;
   user: IUser;
   liked: boolean;
+  collected: boolean;
 }
 
 export interface IProject {

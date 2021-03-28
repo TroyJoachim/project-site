@@ -82,6 +82,7 @@ namespace WebAPI.Dto
         public string Title { get; set; }
         public string Category { get; set; }
         public bool Liked { get; set; }
+        public bool Collected { get; set; }
         public FileDto Image { get; set; }
         public BasicUserDto User { get; set; }
 
@@ -100,7 +101,7 @@ namespace WebAPI.Dto
         public List<BuildStepDto> BuildSteps { get; set; }
     }
 
-    public class ProjectLikeDto
+    public class LikeCollectDto
     {
         public int ProjectId { get; set; }
         public string IdentityId { get; set; }

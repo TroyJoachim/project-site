@@ -54,6 +54,9 @@ namespace WebAPI.Controllers
                     .Include(p => p.Category)
                     .Include(p => p.Files)
                     .Include(p => p.UserLikes)
+                    .Include(p => p.UserCollects)
+                    .OrderBy(p => p.Id)
+                    .AsSplitQuery()
                     .ToListAsync();
 
                 // Map Project to ProjectDto and add it to the list
@@ -87,6 +90,7 @@ namespace WebAPI.Controllers
                         Title = project.Title,
                         Category = project.Category.Name,
                         Liked = user != null && project.UserLikes.Contains(user),
+                        Collected = user != null && project.UserCollects.Contains(user),
                         Image = newFileDto,
                         User = userDto,
                     };

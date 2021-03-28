@@ -8,7 +8,13 @@ import Button from "react-bootstrap/Button";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import { Link, useHistory } from "react-router-dom";
 import avatar from "./images/empty-avatar.png";
-import { getProjects, likeProject, unlikeProject } from "./agent";
+import {
+  getProjects,
+  likeProject,
+  unlikeProject,
+  collectProject,
+  uncollectProject,
+} from "./agent";
 import { IHomeProject } from "./types";
 import { Storage } from "aws-amplify";
 import { globalState } from "./globalState";
@@ -45,33 +51,8 @@ function ProjectCard(props: { project: State<IHomeProject> }) {
   const project = useHookstate(props.project);
   const gState = useHookstate(globalState);
   const avatarUrl = useHookstate("");
-  useEffect(() => {
-    // Get the image if it's not already saved in state.
-    if (project.image.value != null && !project.imageUrl.value) {
-      // Get the project image from S3
-      // Storage.get(state.image.key.value, {
-      //   level: "protected",
-      //   identityId: state.image.identityId.value,
-      // })
-      //   .then((url: any) => {
-      //     state.imageUrl.set(url);
-      //   })
-      //   .catch((error) => console.log(error));
-    }
-    if (!avatarUrl.value) {
-      // Get the project image from S3
-      Storage.get("user-avatar.png", {
-        level: "protected",
-        identityId: project.user.identityId.value,
-      })
-        .then((url: any) => {
-          avatarUrl.set(url);
-        })
-        .catch((error) => console.log(error));
-    }
-  }, [project.image.value]);
-
   const history = useHistory();
+
   // Image style that keeps all the different size images inside the parent div.
   // Need to make sure that the parent div is set to position relative.
   const imgStyle = {
@@ -90,7 +71,7 @@ function ProjectCard(props: { project: State<IHomeProject> }) {
   async function handleLike(projectId: number) {
     // Check if the user is signed in, if not then send them to the sign-in page.
     if (!gState.isAuthenticated.value) {
-      console.log("User not signed in")
+      console.log("User not signed in");
       history.push("/sign-in");
       return;
     }
@@ -101,7 +82,7 @@ function ProjectCard(props: { project: State<IHomeProject> }) {
       const response = await likeProject(projectId, gState.identityId.value);
 
       if (response && response.status === 204) {
-        console.log("Project Liked", projectId);
+        console.log("Project liked", projectId);
         project.liked.set(true);
       }
     } else {
@@ -110,6 +91,36 @@ function ProjectCard(props: { project: State<IHomeProject> }) {
       if (response && response.status === 204) {
         console.log("Project unliked", projectId);
         project.liked.set(false);
+      }
+    }
+  }
+
+  async function handleCollect(projectId: number) {
+    // Check if the user is signed in, if not then send them to the sign-in page.
+    if (!gState.isAuthenticated.value) {
+      console.log("User not signed in");
+      history.push("/sign-in");
+      return;
+    }
+    // Make sure we have the identityId
+    if (!gState.identityId.value) return;
+
+    if (!project.collected.value) {
+      const response = await collectProject(projectId, gState.identityId.value);
+
+      if (response && response.status === 204) {
+        console.log("Project collected", projectId);
+        project.collected.set(true);
+      }
+    } else {
+      const response = await uncollectProject(
+        projectId,
+        gState.identityId.value
+      );
+
+      if (response && response.status === 204) {
+        console.log("Project uncollected", projectId);
+        project.collected.set(false);
       }
     }
   }
@@ -125,7 +136,7 @@ function ProjectCard(props: { project: State<IHomeProject> }) {
   return (
     <Card
       className="m-2 d-inline-block"
-      style={{ width: "301px", height: "300px" }}
+      style={{ width: "301px", height: "268px" }}
     >
       <div
         className="bg-secondary"
@@ -138,7 +149,7 @@ function ProjectCard(props: { project: State<IHomeProject> }) {
       >
         <img src={imageUrl} style={imgStyle} />
       </div>
-      <Card.Body className="home-card-body">
+      <div className="p-2">
         <h6>
           <a href="#" className="mr-1">
             <img
@@ -154,24 +165,31 @@ function ProjectCard(props: { project: State<IHomeProject> }) {
           </Link>
         </h6>
 
-        <ButtonGroup className="ml-1 mt-3">
+        <ButtonGroup className="mt-3 home-btn-group">
           <Button variant="outline-primary">
             <i className="fas fa-share-alt mr-1" aria-hidden="true"></i>
             Share
           </Button>
-          <Button variant="outline-primary">
+          <Button
+            variant={
+              project.collected.value ? "outline-success" : "outline-primary"
+            }
+            onClick={() => handleCollect(project.id.value)}
+          >
             <i className="fas fa-archive mr-1" aria-hidden="true"></i>
-            Collect
+            {project.collected.value ? "Collected" : "Collect"}
           </Button>
           <Button
-            variant={project.liked.value ? "outline-success" : "outline-primary"}
+            variant={
+              project.liked.value ? "outline-success" : "outline-primary"
+            }
             onClick={() => handleLike(project.id.value)}
           >
             <i className="fas fa-thumbs-up mr-1" aria-hidden="true"></i>
             {project.liked.value ? "Liked" : "Like"}
           </Button>
         </ButtonGroup>
-      </Card.Body>
+      </div>
     </Card>
   );
 }
