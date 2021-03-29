@@ -90,6 +90,7 @@ namespace WebAPI.Dto
 
     public class GetProjectDto
     {
+        public int Id { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
         public string Category { get; set; }
@@ -97,6 +98,8 @@ namespace WebAPI.Dto
         public DateTime CreatedAt { get; set; }
         public DateTime EditedAt { get; set; }
         public UserDto User { get; set; }
+        public bool Liked { get; set; }
+        public bool Collected { get; set; }
         public List<FileDto> Files { get; set; }
         public List<BuildStepDto> BuildSteps { get; set; }
     }

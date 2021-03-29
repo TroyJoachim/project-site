@@ -1,22 +1,16 @@
 import { Storage } from "aws-amplify";
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import { getUserToken } from "./helpers";
 import { uuid } from "uuidv4";
 import { globalState } from "./globalState";
 import {
   ICategory,
-  IGetProjectResponse,
-  IProjectResponse,
-  IPostProjectResponse,
   ICreateProjectResponse,
-  ICategoryResponse,
   ICreateUser,
   IUser,
-  IUpdateUserResponse,
   IProject,
   IBuildStep,
   IFile,
-  IHomeProject,
 } from "./types";
 
 // Configure the global level for aws storage.
@@ -45,7 +39,12 @@ export async function getProjects() {
 
 export async function getProject(id: string) {
   try {
-    const response = await http.get("/api/projects/" + id);
+    const response = await http.get("/api/projects/" + id, {
+      headers: {
+        Authorization: `Bearer ${getUserToken()}`,
+        "Content-type": "application/json",
+      },
+    });
     console.log(response);
     return response;
   } catch (error) {
@@ -137,12 +136,7 @@ export async function createProject(project: IProject) {
           Authorization: `Bearer ${getUserToken()}`,
         },
         // Manually map the response to a Typescript interface.
-        transformResponse: [
-          (response: any) => {
-            const projectResponse: IPostProjectResponse = JSON.parse(response);
-            return projectResponse;
-          },
-        ],
+        transformResponse: [(response: any) => JSON.parse(response)],
       }
     );
     console.log("response:", response); // TODO: for development
@@ -157,12 +151,7 @@ export async function getProjectCategories() {
   try {
     const cats = await http.get<ICategory[]>("/api/categories", {
       // Manually map the response to a Typescript interface.
-      transformResponse: [
-        (response: any) => {
-          const categoryResponse: ICategoryResponse = JSON.parse(response);
-          return categoryResponse;
-        },
-      ],
+      transformResponse: [(response: any) => JSON.parse(response)],
     });
     return cats;
   } catch (err) {
@@ -194,7 +183,7 @@ export async function createUser(id: string, username: string) {
     const newUser = {
       identityId: id,
       username: username,
-      sub: globalState.sub.value
+      sub: globalState.sub.value,
     };
 
     const response = await http.post<ICreateUser>("/api/users", newUser, {

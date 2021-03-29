@@ -25,6 +25,8 @@ export interface IProject {
   files: IFile[];
   uploadedFiles: File[];
   user: IUser;
+  liked: boolean;
+  collected: boolean;
 }
 
 export interface IFile {
@@ -51,69 +53,8 @@ export interface ICategory {
   subcategories: ICategory[];
 }
 
-export interface IBuildStepResponse {
-  name: string;
-  description: string;
-  image_ids: string[];
-  file_attachments: IFile[];
-}
-
-export interface IBuildStepModel {
-  order: number;
-  name: string;
-  description: string;
-  image_ids: string[];
-  image_urls: string[];
-  file_attachments: IFile[];
-}
-
-export interface IProjectModel {
-  id: string;
-  name: string;
-  description: string;
-  subcategory_id: string;
-  subcategory: string; // Temporary, need to update api to subcategory_id
-  creation_datetime: string;
-  image_ids: string[];
-  image_urls: string[];
-  build_steps: IBuildStepModel[];
-  file_attachments: IFile[];
-}
-
-export interface IS3Image {
-  key: string;
-  id: string;
-}
-
-export interface IProjectResponse {
-  id: string;
-  name: string;
-  description: string;
-  subcategory_id: string;
-  subcategory: string; // Temporary, need to update api to subcategory_id
-  creation_datetime: string;
-  build_steps: IBuildStepResponse[];
-  image_ids: string[];
-  file_attachments: IFile[];
-}
-
-export interface IGetProjectResponse {
-  status: number;
-  data: IProjectResponse;
-}
-
 export interface ICreateProjectResponse {
   project_id: string;
-}
-
-export interface IPostProjectResponse {
-  status: number;
-  data: ICreateProjectResponse;
-}
-
-export interface ICategoryResponse {
-  status: number;
-  data: ICategory;
 }
 
 export interface IUser {
@@ -131,11 +72,6 @@ export interface ICreateUser {
   avatarPath: string;
   firstName: string;
   lastName: string;
-}
-
-export interface IUpdateUserResponse {
-  status: number;
-  data: IUser;
 }
 
 export interface LoginState {

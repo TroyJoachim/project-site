@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useHookstate, State } from "@hookstate/core";
+import { globalState } from "./globalState";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Carousel from "react-bootstrap/Carousel";
@@ -13,7 +14,6 @@ import draftToHtml from "draftjs-to-html";
 import CommentCard from "./CommentCard";
 import ReactHtmlParser from "react-html-parser";
 import { PageSideNav, SideNavType } from "./PageSideNav";
-import { getProject } from "./agent";
 import { IFile, IProject, IBuildStep, IUser } from "./types";
 import { localizeDateTime, downloadBlob, humanFileSize } from "./helpers";
 import { Storage } from "aws-amplify";
@@ -23,7 +23,15 @@ import {
   Route,
   useRouteMatch,
   useLocation,
+  useHistory,
 } from "react-router-dom";
+import {
+  getProject,
+  likeProject,
+  unlikeProject,
+  collectProject,
+  uncollectProject,
+} from "./agent";
 
 // If the URL doesn't have the category, then default it to the description category
 function defaultCategory(url: any, pathname: string) {
@@ -60,6 +68,8 @@ function Project(props: any) {
     uploadedFiles: [],
     buildSteps: [],
     user: initUser,
+    liked: false,
+    collected: false,
   };
 
   const project = useHookstate<IProject>(initProject);
@@ -79,6 +89,7 @@ function Project(props: any) {
 
 function MainContentArea(props: { project: State<IProject> }) {
   let { path } = useRouteMatch();
+  const project = useHookstate(props.project);
 
   // Checks if there are any files and if they are files and not images.
   const filesDisabled = () => {
@@ -130,6 +141,7 @@ function MainContentArea(props: { project: State<IProject> }) {
           </Card>
 
           <PillNav
+            project={project}
             filesDisabled={filesDisabled()}
             buildLogDisabled={buildLogDisabled()}
           />
@@ -271,9 +283,73 @@ function DisplayImages(props: { images: State<IFile[]> }) {
   }
 }
 
-function PillNav(props: { filesDisabled: boolean; buildLogDisabled: boolean }) {
+function PillNav(props: {
+  project: State<IProject>;
+  filesDisabled: boolean;
+  buildLogDisabled: boolean;
+}) {
   let { url } = useRouteMatch();
   const location = useLocation();
+  const gState = useHookstate(globalState);
+  const project = useHookstate(props.project);
+  const history = useHistory();
+
+  async function handleLike(projectId: number) {
+    // Check if the user is signed in, if not then send them to the sign-in page.
+    if (!gState.isAuthenticated.value) {
+      console.log("User not signed in");
+      history.push("/sign-in");
+      return;
+    }
+    // Make sure we have the identityId
+    if (!gState.identityId.value) return;
+
+    if (!project.liked.value) {
+      const response = await likeProject(projectId, gState.identityId.value);
+
+      if (response && response.status === 204) {
+        console.log("Project liked", projectId);
+        project.liked.set(true);
+      }
+    } else {
+      const response = await unlikeProject(projectId, gState.identityId.value);
+
+      if (response && response.status === 204) {
+        console.log("Project unliked", projectId);
+        project.liked.set(false);
+      }
+    }
+  }
+
+  async function handleCollect(projectId: number) {
+    // Check if the user is signed in, if not then send them to the sign-in page.
+    if (!gState.isAuthenticated.value) {
+      console.log("User not signed in");
+      history.push("/sign-in");
+      return;
+    }
+    // Make sure we have the identityId
+    if (!gState.identityId.value) return;
+
+    if (!project.collected.value) {
+      const response = await collectProject(projectId, gState.identityId.value);
+
+      if (response && response.status === 204) {
+        console.log("Project collected", projectId);
+        project.collected.set(true);
+      }
+    } else {
+      const response = await uncollectProject(
+        projectId,
+        gState.identityId.value
+      );
+
+      if (response && response.status === 204) {
+        console.log("Project uncollected", projectId);
+        project.collected.set(false);
+      }
+    }
+  }
 
   return (
     <Nav
@@ -324,13 +400,13 @@ function PillNav(props: { filesDisabled: boolean; buildLogDisabled: boolean }) {
         </Nav.Link>
       </Nav.Item>
       <Nav.Item>
-        <Nav.Link>
-          <i className="fas fa-thumbs-up"></i> Like
+        <Nav.Link onClick={() => handleLike(project.id.value)}>
+          <i className="fas fa-thumbs-up"></i> {project.liked.value ? "Liked" : "Like"}
         </Nav.Link>
       </Nav.Item>
       <Nav.Item>
-        <Nav.Link>
-          <i className="fas fa-archive"></i> Collect
+        <Nav.Link onClick={() => handleCollect(project.id.value)}>
+          <i className="fas fa-archive"></i> {project.collected.value ? "Collected" : "Collect"}
         </Nav.Link>
       </Nav.Item>
     </Nav>

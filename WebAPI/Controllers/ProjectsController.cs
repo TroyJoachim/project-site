@@ -113,15 +113,31 @@ namespace WebAPI.Controllers
         {
             try
             {
+                User user = null;
+
+                // Get the Sub claim from the JWT token
+                ClaimsIdentity identity = HttpContext.User.Identity as ClaimsIdentity;
+                if (identity != null)
+                {
+                    var sub = identity.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+                    if (sub != null)
+                    {
+                        // Find user by Sub. This is a unique id use by AWS Cognito
+                        user = await _context.Users.SingleOrDefaultAsync(u => u.Sub == sub.Value);
+                    }
+                }
+
                 var project = await _context.Projects
-                .Include(p => p.Category)
-                .Include(p => p.User)
-                .Include(p => p.Files)
-                .Include(p => p.BuildSteps).ThenInclude(bs => bs.Files)
-                .Where(p => p.Id == id)
-                .OrderBy(p => p.Id)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+                    .Include(p => p.Category)
+                    .Include(p => p.User)
+                    .Include(p => p.Files)
+                    .Include(p => p.UserLikes)
+                    .Include(p => p.UserCollects)
+                    .Include(p => p.BuildSteps).ThenInclude(bs => bs.Files)
+                    .Where(p => p.Id == id)
+                    .OrderBy(p => p.Id)
+                    .AsSplitQuery()
+                    .FirstOrDefaultAsync();
 
                 // Map User to UserDto
                 var userDto = new UserDto()
@@ -148,12 +164,15 @@ namespace WebAPI.Controllers
                 // Map Project to GetProjectDto
                 var getProjectDto = new GetProjectDto()
                 {
+                    Id = project.Id,
                     Title = project.Title,
                     Description = project.Description,
                     Category = project.Category.Name,
                     CreatedAt = project.CreatedAt,
                     EditedAt = project.EditedAt,
                     User = userDto,
+                    Liked = user != null && project.UserLikes.Contains(user),
+                    Collected = user != null && project.UserCollects.Contains(user),
                     Files = MapFileDtos(project.Files, project.User.IdentityId),
                     BuildSteps = buildStepList,
                 };

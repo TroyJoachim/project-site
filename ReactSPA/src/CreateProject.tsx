@@ -17,6 +17,7 @@ import { PageSideNav, SideNavType } from "./PageSideNav";
 import { EditorState } from "draft-js";
 import { IBuildStep, IProject, IUser, ICategory } from "./types";
 import { createProject, getProjectCategories } from "./agent";
+import { boolean } from "yup";
 
 function CreateProject() {
   const initUser: IUser = {
@@ -42,6 +43,8 @@ function CreateProject() {
     uploadedFiles: [],
     buildSteps: [],
     user: initUser,
+    liked: false,
+    collected: false,
   };
 
   // Hookstate
