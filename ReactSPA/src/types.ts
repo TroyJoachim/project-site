@@ -38,6 +38,7 @@ export interface IFile {
 }
 
 export interface IBuildStep {
+  id: number;
   order: number;
   title: string;
   description: string;
@@ -49,7 +50,7 @@ export interface IBuildStep {
 
 export interface ICategory {
   id: string;
-  name: string; 
+  name: string;
   subcategories: ICategory[];
 }
 
@@ -82,5 +83,20 @@ export interface LoginState {
 
 export interface ForgotPasswordState {
   sent: boolean;
+  username: string;
+}
+
+export interface IComment {
+  id: number;
+  username: string;
+  createdAt: string;
+  editedAt: string;
+  text: string;
+  user: IBasicUser;
+  children: IComment[];
+}
+
+export interface IBasicUser {
+  identityId: string;
   username: string;
 }

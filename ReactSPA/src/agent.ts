@@ -11,6 +11,7 @@ import {
   IProject,
   IBuildStep,
   IFile,
+  IComment,
 } from "./types";
 
 // Configure the global level for aws storage.
@@ -304,6 +305,54 @@ export async function uncollectProject(projectId: number, identityId: string) {
           "Content-type": "application/json",
           Authorization: `Bearer ${getUserToken()}`,
         },
+      }
+    );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function getComments(projectId: number) {
+  try {
+    const response = await http.get<IComment[]>(
+      "/api/comments/projectcomments/" + projectId.toString(),
+      {
+        // Manually map the response to a Typescript interface.
+        transformResponse: [(response) => JSON.parse(response)],
+      }
+    );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function createComment(
+  text: string,
+  parentId: number | null,
+  projectId: number | null,
+  buildStepId: number | null
+) {
+  try {
+    const response = await http.post<IComment>(
+      "/api/comments",
+      JSON.stringify({
+        identityId: globalState.identityId.value,
+        text: text,
+        inReplyTo: parentId,
+        projectId: projectId,
+        buildStepId: buildStepId,
+      }),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+        // Manually map the response to a Typescript interface.
+        transformResponse: [(response) => JSON.parse(response)],
       }
     );
     return response;

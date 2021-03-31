@@ -25,6 +25,7 @@ namespace WebAPI.Dto
 
     public class BuildStepDto
     {
+        public int Id { get; set; }
         [Required]
         public string Title { get; set; }
         public string Description { get; set; }
@@ -108,5 +109,32 @@ namespace WebAPI.Dto
     {
         public int ProjectId { get; set; }
         public string IdentityId { get; set; }
+    }
+
+    public class CommentDto
+    {
+        public int Id { get; set; }
+        public string Text { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime EditedAt { get; set; }
+        public BasicUserDto User { get; set; }
+        public ICollection<CommentDto> Children { get; set; }
+    }
+
+    public class PutCommentDto
+    {
+        public int Id { get; set; }
+        public string Text { get; set; }
+    }
+
+    public class PostCommentDto
+    {
+        [Required]
+        public string Text { get; set; }
+        [Required]
+        public string IdentityId { get; set; }
+        public int? InReplyTo { get; set; }
+        public int? ProjectId { get; set; }
+        public int? BuildStepId { get; set; }
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WebAPI.Models;
@@ -9,9 +10,10 @@ using WebAPI.Models;
 namespace WebAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210330000426_AddParentCommentRelationship")]
+    partial class AddParentCommentRelationship
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -43,7 +45,7 @@ namespace WebAPI.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("BuildSteps");
+                    b.ToTable("BuildStep");
                 });
 
             modelBuilder.Entity("WebAPI.Models.Category", b =>
@@ -283,7 +285,7 @@ namespace WebAPI.Migrations
 
             modelBuilder.Entity("WebAPI.Models.Comment", b =>
                 {
-                    b.HasOne("WebAPI.Models.BuildStep", "BuildStep")
+                    b.HasOne("WebAPI.Models.BuildStep", null)
                         .WithMany("Comments")
                         .HasForeignKey("BuildStepId");
 
@@ -291,7 +293,7 @@ namespace WebAPI.Migrations
                         .WithMany("Comments")
                         .HasForeignKey("ParentCommentId");
 
-                    b.HasOne("WebAPI.Models.Project", "Project")
+                    b.HasOne("WebAPI.Models.Project", null)
                         .WithMany("Comments")
                         .HasForeignKey("ProjectId");
 
@@ -299,11 +301,7 @@ namespace WebAPI.Migrations
                         .WithMany()
                         .HasForeignKey("UserId");
 
-                    b.Navigation("BuildStep");
-
                     b.Navigation("ParentComment");
-
-                    b.Navigation("Project");
 
                     b.Navigation("User");
                 });

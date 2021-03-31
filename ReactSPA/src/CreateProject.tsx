@@ -74,6 +74,7 @@ function CreateProject() {
     const order = project.buildSteps.get().length + 1;
 
     const initBuildStep: IBuildStep = {
+      id: 0,
       order: order,
       title: "",
       description: "",

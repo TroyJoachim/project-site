@@ -42,6 +42,7 @@ namespace WebAPI.Models
         }
 
         public DbSet<Project> Projects { get; set; }
+        public DbSet<BuildStep> BuildSteps { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Comment> Comments { get; set; }
@@ -114,8 +115,15 @@ namespace WebAPI.Models
         public int Id { get; set; }
         [Required]
         public string Text { get; set; }
-
+        [Required]
+        public DateTime CreatedAt { get; set; }
+        public DateTime EditedAt { get; set; }
+        public User User { get; set; }
+        public Comment ParentComment { get; set; }
         public ICollection<Comment> Comments { get; set; }
+
+        public Project Project { get; set; }
+        public BuildStep BuildStep { get; set; }
     }
 
     public class Like

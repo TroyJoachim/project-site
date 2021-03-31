@@ -152,6 +152,7 @@ namespace WebAPI.Controllers
                 {
                     var buildStepDto = new BuildStepDto()
                     {
+                        Id = buildStep.Id,
                         Title = buildStep.Title,
                         Description = buildStep.Description,
                         Order = buildStep.Order,
@@ -281,7 +282,6 @@ namespace WebAPI.Controllers
                 _logger.LogError(ex.ToString());
                 return StatusCode(500);
             }
-
         }
 
         // DELETE: api/Projects/5

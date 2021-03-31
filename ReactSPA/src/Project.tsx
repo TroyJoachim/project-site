@@ -55,7 +55,7 @@ function Project(props: any) {
   };
 
   const initProject: IProject = {
-    id: 0,
+    id: props.match.params.id,
     title: "",
     description: "",
     category: "",
@@ -167,7 +167,7 @@ function MainContentArea(props: { project: State<IProject> }) {
               <Card>
                 <Card.Body>
                   <h3 className="border-bottom pb-2">Comments</h3>
-                  <CommentCard />
+                  <CommentCard projectId={project.id.value} />
                 </Card.Body>
               </Card>
             </Route>
@@ -401,12 +401,14 @@ function PillNav(props: {
       </Nav.Item>
       <Nav.Item>
         <Nav.Link onClick={() => handleLike(project.id.value)}>
-          <i className="fas fa-thumbs-up"></i> {project.liked.value ? "Liked" : "Like"}
+          <i className="fas fa-thumbs-up"></i>{" "}
+          {project.liked.value ? "Liked" : "Like"}
         </Nav.Link>
       </Nav.Item>
       <Nav.Item>
         <Nav.Link onClick={() => handleCollect(project.id.value)}>
-          <i className="fas fa-archive"></i> {project.collected.value ? "Collected" : "Collect"}
+          <i className="fas fa-archive"></i>{" "}
+          {project.collected.value ? "Collected" : "Collect"}
         </Nav.Link>
       </Nav.Item>
     </Nav>
@@ -501,11 +503,12 @@ function FileList(props: { files: IFile[] }) {
 
 function ImageCard(props: { buildStep: State<IBuildStep> }) {
   let category = useHookstate("img-desc");
+  let buildStep = useHookstate(props.buildStep);
 
   function imageCardCategory() {
     switch (category.get()) {
       case "img-comments":
-        return <ImageCardComments />;
+        return <CommentCard buildStepId={buildStep.id.value} />;
 
       case "img-files":
         return <ImageCardFiles files={props.buildStep.files.get()} />;
@@ -549,10 +552,6 @@ function ImageCard(props: { buildStep: State<IBuildStep> }) {
       </Card.Body>
     </Card>
   );
-}
-
-function ImageCardComments() {
-  return <CommentCard />;
 }
 
 function ImageCardFiles(props: { files: IFile[] }) {
