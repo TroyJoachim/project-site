@@ -338,6 +338,12 @@ footer {
   border-bottom: 1px solid #dee2e6;
 }
 
+/* Project page */
+.public-avatar-img  {
+  border-radius: 50%;
+  max-height: 40px;
+}
+
 /* MyAccount */
 .avatar {
   border-radius: 50%;

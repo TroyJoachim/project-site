@@ -1,14 +1,20 @@
 import {
   RecoilRoot,
   atom,
+  atomFamily,
   selector,
   useRecoilState,
   useRecoilValue,
 } from "recoil";
 
-import { LoginState, ForgotPasswordState } from "./types";
+import {
+  LoginState,
+  ForgotPasswordState,
+  IComment,
+  IChildComment,
+} from "./types";
 
-// State
+// Recoil State Atoms
 export const authState = atom<LoginState>({
   key: "authState", // unique ID (with respect to other atoms/selectors)
   default: {
@@ -24,4 +30,14 @@ export const forgotPasswordState = atom<ForgotPasswordState>({
     sent: false,
     username: "",
   }, // default value (aka initial value)
+});
+
+export const commentState = atomFamily({
+  key: "comment-list",
+  default: [] as IComment[],
+});
+
+export const childCommentState = atomFamily({
+  key: "child-comment-list",
+  default: [] as IChildComment[],
 });

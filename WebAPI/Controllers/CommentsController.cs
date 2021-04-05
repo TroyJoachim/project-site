@@ -31,7 +31,6 @@ namespace WebAPI.Controllers
         {
             var comments = await _context.Comments
                 .Include(c => c.User)
-                .Include(c => c.Comments)
                 .OrderBy(c => c.Id)
                 .AsSplitQuery()
                 .ToListAsync();
@@ -62,7 +61,7 @@ namespace WebAPI.Controllers
                 Text = comment.Text,
                 EditedAt = comment.EditedAt,
                 User = basicUserDto,
-                Children = null,
+                //Children = null,
             };
 
             return commentDto;
@@ -74,36 +73,27 @@ namespace WebAPI.Controllers
         {
             try
             {
-                var comments = await _context.Comments
-                    .Include(c => c.User)
-                    .Include(c => c.Comments)
-                    .Where(c => c.Project.Id == projectId)
-                    .OrderBy(c => c.Id)
-                    .AsSplitQuery()
-                    .ToListAsync();
-
-                var newCommentList = new List<CommentDto>();
-                foreach (var comment in comments)
+                var result = await GetCommentDtos(projectId);
+                if (result != null)
                 {
-                    var basicUserDto = new BasicUserDto()
-                    {
-                        IdentityId = comment.User.IdentityId,
-                        Username = comment.User.Username,
-                    };
-
-                    var commentDto = new CommentDto()
-                    {
-                        Id = comment.Id,
-                        Text = comment.Text,
-                        EditedAt = comment.EditedAt,
-                        User = basicUserDto,
-                        Children = comment.Comments != null ? MapCommentDtos(comment.Comments) : null
-                    };
-
-                    newCommentList.Add(commentDto);
+                    return result;
                 }
+                return StatusCode(500);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.ToString());
+                return StatusCode(500);
+            }
+        }
 
-                return newCommentList;
+        // GET: api/Comments/ChildComments/5
+        [HttpGet("ChildComments/{parentId}")]
+        public async Task<ActionResult<List<ChildCommentDto>>> GetChildComments(int parentId)
+        {
+            try
+            {
+                return await GetChildCommentDtos(parentId);
             }
             catch (Exception ex)
             {
@@ -151,18 +141,13 @@ namespace WebAPI.Controllers
         // POST: api/Comments
         //[Authorize]
         [HttpPost]
-        public async Task<ActionResult<CommentDto>> PostComment(PostCommentDto postComment)
+        public async Task<ActionResult<List<CommentDto>>> PostComment(PostCommentDto postComment)
         {
             try
             {
-                Comment parentComment = null;
                 Project project = null;
                 BuildStep buildStep = null;
                 var user = await _context.Users.SingleOrDefaultAsync(u => u.IdentityId == postComment.IdentityId);
-                if (postComment.InReplyTo != null)
-                {
-                    parentComment = await _context.Comments.FindAsync(postComment.InReplyTo);
-                }
                 if (postComment.ProjectId != null)
                 {
                     project = await _context.Projects.FindAsync(postComment.ProjectId);
@@ -177,7 +162,6 @@ namespace WebAPI.Controllers
                     Text = postComment.Text,
                     CreatedAt = DateTime.UtcNow,
                     EditedAt = DateTime.UtcNow,
-                    ParentComment = parentComment,
                     User = user,
                     Project = project,
                     BuildStep = buildStep,
@@ -186,7 +170,48 @@ namespace WebAPI.Controllers
                 _context.Comments.Add(newComment);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction("GetComment", new { id = newComment.Id }, MapCommentToDto(newComment));
+                // Return the list of new comments
+                var result = await GetCommentDtos(newComment.ProjectId);
+                if (result != null)
+                {
+                    return result;
+                }
+                return StatusCode(500);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.ToString());
+                return StatusCode(500);
+            }
+        }
+
+        // POST: api/ChildComments
+        //[Authorize]
+        [HttpPost("ChildComments/")]
+        public async Task<ActionResult<List<ChildCommentDto>>> PostChildComment(PostChildCommentDto postChildComment)
+        {
+            try
+            {
+                Comment parentComment = null;
+                var user = await _context.Users.SingleOrDefaultAsync(u => u.IdentityId == postChildComment.IdentityId);
+                var replyTo = await _context.Users.SingleOrDefaultAsync(u => u.IdentityId == postChildComment.InReplyTo);
+                parentComment = await _context.Comments.FindAsync(postChildComment.ParentId);
+
+                var newChildComment = new ChildComment()
+                {
+                    Text = postChildComment.Text,
+                    CreatedAt = DateTime.UtcNow,
+                    EditedAt = DateTime.UtcNow,
+                    User = user,
+                    InReplyTo = replyTo,
+                    Comment = parentComment,
+                };
+
+                _context.ChildComments.Add(newChildComment);
+                await _context.SaveChangesAsync();
+
+                // Return the list of new comments
+                return await GetChildCommentDtos(newChildComment.CommentId);
             }
             catch (Exception ex)
             {
@@ -217,27 +242,6 @@ namespace WebAPI.Controllers
             return _context.Comments.Any(e => e.Id == id);
         }
 
-        private static CommentDto MapCommentToDto(Comment comment)
-        {
-            // Map the User
-            var userDto = new BasicUserDto()
-            {
-                IdentityId = comment.User.IdentityId, // TODO: check if I need to send this
-                Username = comment.User.Username
-            };
-
-            var newCommentDto = new CommentDto()
-            {
-                Id = comment.Id,
-                Text = comment.Text,
-                CreatedAt = comment.CreatedAt,
-                EditedAt = comment.EditedAt,
-                User = userDto,
-                //Comments = MapCommentDtos(comment.Comments),
-            };
-            return newCommentDto;
-        }
-
         private static List<CommentDto> MapCommentDtos(ICollection<Comment> comments)
         {
             var newCommentList = new List<CommentDto>();
@@ -257,12 +261,101 @@ namespace WebAPI.Controllers
                     CreatedAt = comment.CreatedAt,
                     EditedAt = comment.EditedAt,
                     User = userDto,
-                    Children = comment.Comments != null ? MapCommentDtos(comment.Comments) : null,
                 };
 
                 newCommentList.Add(newCommentDto);
             }
             return newCommentList;
+        }
+
+        private async Task<List<CommentDto>> GetCommentDtos(int projectId)
+        {
+            try
+            {
+                var comments = await _context.Comments
+                    .Include(c => c.User)
+                    .Include(c => c.Children)
+                    .Where(c => c.Project.Id == projectId)
+                    .OrderBy(c => c.CreatedAt)
+                    .Reverse()
+                    .AsSplitQuery()
+                    .ToListAsync();
+
+                var newCommentList = new List<CommentDto>();
+                foreach (var comment in comments)
+                {
+                    var basicUserDto = new BasicUserDto()
+                    {
+                        IdentityId = comment.User.IdentityId,
+                        Username = comment.User.Username,
+                    };
+
+                    var commentDto = new CommentDto()
+                    {
+                        Id = comment.Id,
+                        Text = comment.Text,
+                        EditedAt = comment.EditedAt,
+                        User = basicUserDto,
+                        ProjectId = comment.ProjectId,
+                        ChildCount = comment.Children.Count,
+                    };
+
+                    newCommentList.Add(commentDto);
+                }
+
+                return newCommentList;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.ToString());
+                return null;
+            }
+        }
+
+        private async Task<List<ChildCommentDto>> GetChildCommentDtos(int parentId)
+        {
+            var childComments = await _context.ChildComments
+                .Include(cc => cc.User)
+                .Where(cc => cc.CommentId == parentId)
+                .OrderBy(cc => cc.CreatedAt)
+                .Reverse()
+                .AsSplitQuery()
+                .ToListAsync();
+
+            var childCommentDtos = new List<ChildCommentDto>();
+            foreach (var childComment in childComments)
+            {
+                var user = new BasicUserDto()
+                {
+                    IdentityId = childComment.User.IdentityId,
+                    Username = childComment.User.Username,
+                };
+
+                BasicUserDto inReplyToUser = null;
+                if (childComment.InReplyTo != null)
+                {
+                    inReplyToUser = new BasicUserDto()
+                    {
+                        IdentityId = childComment.InReplyTo.IdentityId,
+                        Username = childComment.InReplyTo.Username,
+                    };
+                }
+
+                var childCommentDto = new ChildCommentDto()
+                {
+                    Id = childComment.Id,
+                    Text = childComment.Text,
+                    CreatedAt = childComment.CreatedAt,
+                    EditedAt = childComment.EditedAt,
+                    User = user,
+                    InReplyTo = inReplyToUser,
+                    ParentId = childComment.CommentId,
+                };
+
+                childCommentDtos.Add(childCommentDto);
+            }
+
+            return childCommentDtos;
         }
     }
 }

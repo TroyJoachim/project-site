@@ -88,12 +88,23 @@ export interface ForgotPasswordState {
 
 export interface IComment {
   id: number;
-  username: string;
   createdAt: string;
   editedAt: string;
   text: string;
   user: IBasicUser;
-  children: IComment[];
+  parentId: number;
+  projectId: number;
+  childCount: number;
+}
+
+export interface IChildComment {
+  id: number;
+  createdAt: string;
+  editedAt: string;
+  text: string;
+  user: IBasicUser;
+  inReplyTo: IBasicUser;
+  parentId: number;
 }
 
 export interface IBasicUser {

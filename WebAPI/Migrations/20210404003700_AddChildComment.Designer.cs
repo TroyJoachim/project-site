@@ -10,8 +10,8 @@ using WebAPI.Models;
 namespace WebAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20210330000426_AddParentCommentRelationship")]
-    partial class AddParentCommentRelationship
+    [Migration("20210404003700_AddChildComment")]
+    partial class AddChildComment
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -45,7 +45,7 @@ namespace WebAPI.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("BuildStep");
+                    b.ToTable("BuildSteps");
                 });
 
             modelBuilder.Entity("WebAPI.Models.Category", b =>
@@ -67,6 +67,42 @@ namespace WebAPI.Migrations
                     b.HasIndex("ParentId");
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("WebAPI.Models.ChildComment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<int>("CommentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime>("EditedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("InReplyToId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommentId");
+
+                    b.HasIndex("InReplyToId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ChildComment");
                 });
 
             modelBuilder.Entity("WebAPI.Models.Collect", b =>
@@ -100,10 +136,7 @@ namespace WebAPI.Migrations
                     b.Property<DateTime>("EditedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<int?>("ParentCommentId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("ProjectId")
+                    b.Property<int>("ProjectId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Text")
@@ -116,8 +149,6 @@ namespace WebAPI.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BuildStepId");
-
-                    b.HasIndex("ParentCommentId");
 
                     b.HasIndex("ProjectId");
 
@@ -264,6 +295,29 @@ namespace WebAPI.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("WebAPI.Models.ChildComment", b =>
+                {
+                    b.HasOne("WebAPI.Models.Comment", "Comment")
+                        .WithMany("Children")
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WebAPI.Models.User", "InReplyTo")
+                        .WithMany()
+                        .HasForeignKey("InReplyToId");
+
+                    b.HasOne("WebAPI.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Comment");
+
+                    b.Navigation("InReplyTo");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("WebAPI.Models.Collect", b =>
                 {
                     b.HasOne("WebAPI.Models.Project", "Project")
@@ -285,23 +339,23 @@ namespace WebAPI.Migrations
 
             modelBuilder.Entity("WebAPI.Models.Comment", b =>
                 {
-                    b.HasOne("WebAPI.Models.BuildStep", null)
+                    b.HasOne("WebAPI.Models.BuildStep", "BuildStep")
                         .WithMany("Comments")
                         .HasForeignKey("BuildStepId");
 
-                    b.HasOne("WebAPI.Models.Comment", "ParentComment")
+                    b.HasOne("WebAPI.Models.Project", "Project")
                         .WithMany("Comments")
-                        .HasForeignKey("ParentCommentId");
-
-                    b.HasOne("WebAPI.Models.Project", null)
-                        .WithMany("Comments")
-                        .HasForeignKey("ProjectId");
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("WebAPI.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId");
 
-                    b.Navigation("ParentComment");
+                    b.Navigation("BuildStep");
+
+                    b.Navigation("Project");
 
                     b.Navigation("User");
                 });
@@ -369,7 +423,7 @@ namespace WebAPI.Migrations
 
             modelBuilder.Entity("WebAPI.Models.Comment", b =>
                 {
-                    b.Navigation("Comments");
+                    b.Navigation("Children");
                 });
 
             modelBuilder.Entity("WebAPI.Models.Project", b =>

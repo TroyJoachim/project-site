@@ -46,6 +46,7 @@ namespace WebAPI.Models
         public DbSet<User> Users { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Comment> Comments { get; set; }
+        public DbSet<ChildComment> ChildComments { get; set; }
     }
 
     public class Project
@@ -119,11 +120,24 @@ namespace WebAPI.Models
         public DateTime CreatedAt { get; set; }
         public DateTime EditedAt { get; set; }
         public User User { get; set; }
-        public Comment ParentComment { get; set; }
-        public ICollection<Comment> Comments { get; set; }
 
+        public int ProjectId { get; set; }
         public Project Project { get; set; }
         public BuildStep BuildStep { get; set; }
+        public ICollection<ChildComment> Children { get; set; }
+    }
+
+    public class ChildComment
+    {
+        public int Id { get; set; }
+        public string Text { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime EditedAt { get; set; }
+        public User User { get; set; }
+        public User InReplyTo { get; set; }
+
+        public int CommentId { get; set; }
+        public Comment Comment { get; set; }
     }
 
     public class Like

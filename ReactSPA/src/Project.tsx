@@ -14,7 +14,7 @@ import draftToHtml from "draftjs-to-html";
 import CommentCard from "./CommentCard";
 import ReactHtmlParser from "react-html-parser";
 import { PageSideNav, SideNavType } from "./PageSideNav";
-import { IFile, IProject, IBuildStep, IUser } from "./types";
+import { IFile, IProject, IBuildStep, IUser, IComment } from "./types";
 import { localizeDateTime, downloadBlob, humanFileSize } from "./helpers";
 import { Storage } from "aws-amplify";
 import {
@@ -181,7 +181,9 @@ function MainContentArea(props: { project: State<IProject> }) {
             </Route>
             <Route path={`${path}/build-log`}>
               {props.project.buildSteps.value ? (
-                <BuildLog buildSteps={props.project.buildSteps} />
+                props.project.buildSteps.map((bs, index) => (
+                  <ImageCard key={index} buildStep={bs} />
+                ))
               ) : (
                 <></>
               )}
@@ -415,14 +417,6 @@ function PillNav(props: {
   );
 }
 
-function BuildLog(props: { buildSteps: State<IBuildStep[]> }) {
-  const buildStepArr = props.buildSteps.map((bs, index) => (
-    <ImageCard key={index} buildStep={bs} />
-  ));
-
-  return <>{buildStepArr}</>;
-}
-
 function Description(props: { text: string }) {
   function parseHtml() {
     if (props.text) {
@@ -502,8 +496,8 @@ function FileList(props: { files: IFile[] }) {
 }
 
 function ImageCard(props: { buildStep: State<IBuildStep> }) {
-  let category = useHookstate("img-desc");
-  let buildStep = useHookstate(props.buildStep);
+  const category = useHookstate("img-desc");
+  const buildStep = useHookstate(props.buildStep);
 
   function imageCardCategory() {
     switch (category.get()) {

@@ -118,7 +118,20 @@ namespace WebAPI.Dto
         public DateTime CreatedAt { get; set; }
         public DateTime EditedAt { get; set; }
         public BasicUserDto User { get; set; }
-        public ICollection<CommentDto> Children { get; set; }
+        public int? ParentId { get; set; }
+        public int ProjectId { get; set; }
+        public int ChildCount { get; set; }
+    }
+
+    public class ChildCommentDto
+    {
+        public int Id { get; set; }
+        public string Text { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime EditedAt { get; set; }
+        public BasicUserDto User { get; set; }
+        public BasicUserDto InReplyTo { get; set; }
+        public int ParentId { get; set; }
     }
 
     public class PutCommentDto
@@ -136,5 +149,15 @@ namespace WebAPI.Dto
         public int? InReplyTo { get; set; }
         public int? ProjectId { get; set; }
         public int? BuildStepId { get; set; }
+    }
+
+    public class PostChildCommentDto
+    {
+        public int ParentId { get; set; }
+        [Required]
+        public string Text { get; set; }
+        [Required]
+        public string IdentityId { get; set; }
+        public string InReplyTo { get; set; }
     }
 }

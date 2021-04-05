@@ -12,6 +12,7 @@ import {
   IBuildStep,
   IFile,
   IComment,
+  IChildComment
 } from "./types";
 
 // Configure the global level for aws storage.
@@ -330,19 +331,33 @@ export async function getComments(projectId: number) {
   }
 }
 
+export async function getChildComments(parentId: number) {
+  try {
+    const response = await http.get<IChildComment[]>(
+      "/api/comments/childcomments/" + parentId.toString(),
+      {
+        // Manually map the response to a Typescript interface.
+        transformResponse: [(response) => JSON.parse(response)],
+      }
+    );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
 export async function createComment(
   text: string,
-  parentId: number | null,
   projectId: number | null,
   buildStepId: number | null
 ) {
   try {
-    const response = await http.post<IComment>(
+    const response = await http.post<IComment[]>(
       "/api/comments",
       JSON.stringify({
         identityId: globalState.identityId.value,
         text: text,
-        inReplyTo: parentId,
         projectId: projectId,
         buildStepId: buildStepId,
       }),
@@ -355,6 +370,51 @@ export async function createComment(
         transformResponse: [(response) => JSON.parse(response)],
       }
     );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function createChildComment(
+  text: string,
+  parentId: number,
+  inReplyTo: string | undefined,
+) {
+  try {
+    const response = await http.post<IChildComment[]>(
+      "/api/comments/childcomments",
+      JSON.stringify({
+        identityId: globalState.identityId.value,
+        text: text,
+        parentId: parentId,
+        inReplyTo: inReplyTo,
+      }),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+        // Manually map the response to a Typescript interface.
+        transformResponse: [(response) => JSON.parse(response)],
+      }
+    );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function deleteComment(id: number) {
+  try {
+    const response = await http.delete("/api/comments/" + id.toString(), {
+      headers: {
+        "Content-type": "application/json",
+        Authorization: `Bearer ${getUserToken()}`,
+      },
+    });
     return response;
   } catch (err) {
     console.log(err);
