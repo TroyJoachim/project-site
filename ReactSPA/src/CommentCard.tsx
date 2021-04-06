@@ -3,13 +3,14 @@ import Button from "react-bootstrap/Button";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Form from "react-bootstrap/Form";
 import Collapse from "react-bootstrap/Collapse";
-import { useHookstate } from "@hookstate/core";
+import { useHookstate, State } from "@hookstate/core";
 import {
   createComment,
   getComments,
   deleteComment,
   createChildComment,
   getChildComments,
+  deleteChildComment,
 } from "./agent";
 import { IChildComment, IComment } from "./types";
 import { localizeDateTime } from "./helpers";
@@ -20,6 +21,7 @@ import { Link } from "react-router-dom";
 function AddComment(props: {
   projectId?: number;
   buildStepId?: number;
+  toggleReply: State<boolean>;
   commentCreated: () => void;
 }) {
   let id = "";
@@ -32,9 +34,14 @@ function AddComment(props: {
   const [comments, setComments] = useRecoilState(commentState(id));
   const text = useHookstate("");
   const loading = useHookstate(false);
+  const toggleReply = useHookstate(props.toggleReply);
 
   function handleEnterText(elem: React.ChangeEvent<HTMLTextAreaElement>) {
     text.set(elem.target.value);
+  }
+
+  function handleCancel() {
+    toggleReply.set(false);
   }
 
   async function handleOnSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -71,7 +78,9 @@ function AddComment(props: {
         className="float-right mt-2"
         style={{ width: "110px" }}
       >
-        <Button variant="secondary">Cancel</Button>
+        <Button variant="secondary" onClick={handleCancel}>
+          Cancel
+        </Button>
         <Button variant="primary" type="submit" disabled={loading.value}>
           Reply
         </Button>
@@ -83,6 +92,7 @@ function AddComment(props: {
 function AddChildComment(props: {
   parentId: number;
   inReplyTo?: string;
+  toggleReply: State<boolean>;
   childCommentCreated: () => void;
 }) {
   const [childComments, setChildComments] = useRecoilState(
@@ -90,14 +100,22 @@ function AddChildComment(props: {
   );
   const text = useHookstate("");
   const loading = useHookstate(false);
+  const toggleReply = useHookstate(props.toggleReply);
 
   function handleEnterText(elem: React.ChangeEvent<HTMLTextAreaElement>) {
     text.set(elem.target.value);
   }
 
+  function handleCancel() {
+    toggleReply.set(false);
+  }
+
   async function handleOnSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     event.stopPropagation();
+
+    console.log(props.parentId);
+    console.log(props.inReplyTo);
 
     // Submit the form
     const response = await createChildComment(
@@ -129,7 +147,9 @@ function AddChildComment(props: {
         className="float-right mt-2"
         style={{ width: "110px" }}
       >
-        <Button variant="secondary">Cancel</Button>
+        <Button variant="secondary" onClick={handleCancel}>
+          Cancel
+        </Button>
         <Button variant="primary" type="submit" disabled={loading.value}>
           Reply
         </Button>
@@ -138,11 +158,20 @@ function AddChildComment(props: {
   );
 }
 
-function ReportComment() {
+function ReportComment(props: { toggleReport: State<boolean> }) {
+  const toggleReport = useHookstate(props.toggleReport);
+  function handleCancel() {
+    toggleReport.set(false);
+  }
   return (
     <Form className="mt-2">
       <p>Report this comment as spam or inappropriate?</p>
-      <Button variant="secondary" size="sm" className="mr-2">
+      <Button
+        variant="secondary"
+        size="sm"
+        className="mr-2"
+        onClick={handleCancel}
+      >
         Cancel
       </Button>
       <Button variant="primary" size="sm">
@@ -156,6 +185,7 @@ function DeleteComment(props: {
   id: number;
   projectId?: number;
   buildStepId?: number;
+  toggleDelete: State<boolean>;
   commentDeleted: () => void;
 }) {
   // TODO: This should never be the case
@@ -167,6 +197,7 @@ function DeleteComment(props: {
     id = "buildstep-" + props.buildStepId.toString();
   }
   const [comments, setComments] = useRecoilState(commentState(id));
+  const toggleDelete = useHookstate(props.toggleDelete);
 
   async function handleDelete() {
     const response = await deleteComment(props.id);
@@ -175,6 +206,48 @@ function DeleteComment(props: {
     if (response && response.status === 204) {
       const newComments = comments.filter((c) => c.id !== props.id);
       setComments(newComments);
+      props.commentDeleted();
+    }
+  }
+
+  function handleCancel() {
+    toggleDelete.set(false);
+  }
+
+  return (
+    <Form className="mt-2">
+      <p>Delete this comment?</p>
+      <Button
+        variant="secondary"
+        size="sm"
+        className="mr-2"
+        onClick={handleCancel}
+      >
+        Cancel
+      </Button>
+      <Button variant="danger" size="sm" onClick={handleDelete}>
+        Delete
+      </Button>
+    </Form>
+  );
+}
+
+function DeleteChildComment(props: {
+  id: number;
+  parentId: number;
+  commentDeleted: () => void;
+}) {
+  const [childComments, setChildComments] = useRecoilState(
+    childCommentState(props.parentId)
+  );
+
+  async function handleDelete() {
+    const response = await deleteChildComment(props.id);
+
+    console.log(response);
+    if (response && response.status === 204) {
+      const newComments = childComments.filter((cc) => cc.id !== props.id);
+      setChildComments(newComments);
       props.commentDeleted();
     }
   }
@@ -192,12 +265,19 @@ function DeleteComment(props: {
   );
 }
 
-// A recursive function to show a comment and nested comments
 function Comment(props: {
   comment: IComment;
   projectId?: number;
   buildStepId?: number;
 }) {
+  let id = "";
+  if (props.projectId) {
+    id = "project-" + props.projectId.toString();
+  }
+  if (props.buildStepId) {
+    id = "buildstep-" + props.buildStepId.toString();
+  }
+  const [comments, setComments] = useRecoilState(commentState(id));
   const toggleChildren = useHookstate(false);
   const toggleReply = useHookstate(false);
   const toggleReport = useHookstate(false);
@@ -243,6 +323,19 @@ function Comment(props: {
   function handleChildCommentCreated() {
     toggleReply.set(false);
     toggleChildren.set(true);
+
+    // This will get sent to true so it loads the children.
+    loadChildren.set(true);
+
+    // Increment the child comment count by 1
+    const newCommentList = comments.map((c) => {
+      if (c.id === props.comment.id) {
+        return { ...c, childCount: c.childCount + 1 };
+      } else {
+        return c;
+      }
+    });
+    setComments(newCommentList);
   }
 
   function handleCommentDeleted() {
@@ -328,6 +421,7 @@ function Comment(props: {
                     id={props.comment.id}
                     projectId={props.projectId}
                     buildStepId={props.buildStepId}
+                    toggleDelete={toggleDelete}
                     commentDeleted={handleCommentDeleted}
                   />
                 </div>
@@ -336,7 +430,7 @@ function Comment(props: {
             <div className="d-flex flex-row">
               <Collapse in={toggleReport.value} className="w-100">
                 <div>
-                  <ReportComment />
+                  <ReportComment toggleReport={toggleReport} />
                 </div>
               </Collapse>
             </div>
@@ -345,6 +439,7 @@ function Comment(props: {
                 <div className="flex-fill">
                   <AddChildComment
                     parentId={props.comment.id}
+                    toggleReply={toggleReply}
                     childCommentCreated={handleChildCommentCreated}
                   />
                 </div>
@@ -354,9 +449,13 @@ function Comment(props: {
               <Collapse in={toggleChildren.value} className="w-100">
                 <div>
                   {loadChildren.value ? (
-                    <ChildComments parentId={props.comment.id} />
+                    <ChildComments
+                      parentId={props.comment.id}
+                      projectId={props.projectId}
+                      buildStepId={props.buildStepId}
+                    />
                   ) : (
-                    <>Loading...</>
+                    <></>
                   )}
                 </div>
               </Collapse>
@@ -368,7 +467,11 @@ function Comment(props: {
   );
 }
 
-function ChildComments(props: { parentId: number }) {
+function ChildComments(props: {
+  parentId: number;
+  projectId?: number;
+  buildStepId?: number;
+}) {
   // Setup state
   const [childComments, setChildComments] = useRecoilState(
     childCommentState(props.parentId)
@@ -394,21 +497,33 @@ function ChildComments(props: { parentId: number }) {
       {childComments.map((childComment, i) => (
         <ChildComment
           key={i}
-          parentId={childComment.id}
+          parentId={props.parentId}
+          projectId={props.projectId}
+          buildStepId={props.buildStepId}
           childComment={childComment}
         />
       ))}
     </>
   ) : (
-    <div>Loading...</div>
+    <></>
   );
 }
 
 function ChildComment(props: {
   parentId: number;
+  projectId?: number;
+  buildStepId?: number;
   childComment: IChildComment;
 }) {
   // Setup state
+  let id = "";
+  if (props.projectId) {
+    id = "project-" + props.projectId.toString();
+  }
+  if (props.buildStepId) {
+    id = "buildstep-" + props.buildStepId.toString();
+  }
+  const [comments, setComments] = useRecoilState(commentState(id));
   const toggleReply = useHookstate(false);
   const toggleReport = useHookstate(false);
   const toggleDelete = useHookstate(false);
@@ -441,6 +556,18 @@ function ChildComment(props: {
 
   function handleCommentDeleted() {
     toggleDelete.set(false);
+
+    // Increment the child comment count by 1
+    const newCommentList = comments.map((c) => {
+      if (c.id === props.parentId) {
+        return { ...c, childCount: c.childCount - 1 };
+      } else {
+        return c;
+      }
+    });
+    console.log(newCommentList);
+    console.log(comments);
+    setComments(newCommentList);
   }
 
   const imageUrl =
@@ -507,8 +634,9 @@ function ChildComment(props: {
             <div className="d-flex flex-row">
               <Collapse in={toggleDelete.value} className="w-100">
                 <div>
-                  <DeleteComment
+                  <DeleteChildComment
                     id={props.childComment.id}
+                    parentId={props.parentId}
                     commentDeleted={handleCommentDeleted}
                   />
                 </div>
@@ -517,7 +645,7 @@ function ChildComment(props: {
             <div className="d-flex flex-row">
               <Collapse in={toggleReport.value} className="w-100">
                 <div>
-                  <ReportComment />
+                  <ReportComment toggleReport={toggleReport} />
                 </div>
               </Collapse>
             </div>
@@ -526,11 +654,8 @@ function ChildComment(props: {
                 <div className="flex-fill">
                   <AddChildComment
                     parentId={props.parentId}
-                    inReplyTo={
-                      props.childComment.inReplyTo
-                        ? props.childComment.inReplyTo.identityId
-                        : undefined
-                    }
+                    inReplyTo={props.childComment.user.identityId}
+                    toggleReply={toggleReply}
                     childCommentCreated={handleChildCommentCreated}
                   />
                 </div>
@@ -601,6 +726,7 @@ export default function CommentCard(props: {
           <div className="flex-fill">
             <AddComment
               projectId={props.projectId}
+              toggleReply={toggleAddComment}
               commentCreated={handleAddComment}
             />
           </div>

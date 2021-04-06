@@ -237,6 +237,23 @@ namespace WebAPI.Controllers
             return NoContent();
         }
 
+        // DELETE: api/Comments/ChildComments/5
+        //[Authorize]
+        [HttpDelete("ChildComments/{id}")]
+        public async Task<IActionResult> DeleteChildComment(int id)
+        {
+            var childComment = await _context.ChildComments.FindAsync(id);
+            if (childComment == null)
+            {
+                return NotFound();
+            }
+
+            _context.ChildComments.Remove(childComment);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         private bool CommentExists(int id)
         {
             return _context.Comments.Any(e => e.Id == id);
@@ -318,7 +335,6 @@ namespace WebAPI.Controllers
                 .Include(cc => cc.User)
                 .Where(cc => cc.CommentId == parentId)
                 .OrderBy(cc => cc.CreatedAt)
-                .Reverse()
                 .AsSplitQuery()
                 .ToListAsync();
 

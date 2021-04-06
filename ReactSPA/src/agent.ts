@@ -421,3 +421,18 @@ export async function deleteComment(id: number) {
     return null;
   }
 }
+
+export async function deleteChildComment(id: number) {
+  try {
+    const response = await http.delete("/api/comments/childcomments/" + id.toString(), {
+      headers: {
+        "Content-type": "application/json",
+        Authorization: `Bearer ${getUserToken()}`,
+      },
+    });
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
