@@ -87,6 +87,27 @@ namespace WebAPI.Controllers
             }
         }
 
+        // GET: api/Comments/BuildStepComments/5
+        [HttpGet("BuildStepComments/{buildStepId}")]
+        public async Task<ActionResult<List<CommentDto>>> GetBuildStepComments(int buildStepId)
+        {
+            try
+            {
+                // TODO: Find a better way to do this
+                var result = await GetCommentDtos(0, buildStepId);
+                if (result != null)
+                {
+                    return result;
+                }
+                return StatusCode(500);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.ToString());
+                return StatusCode(500);
+            }
+        }
+
         // GET: api/Comments/ChildComments/5
         [HttpGet("ChildComments/{parentId}")]
         public async Task<ActionResult<List<ChildCommentDto>>> GetChildComments(int parentId)
@@ -145,33 +166,38 @@ namespace WebAPI.Controllers
         {
             try
             {
-                Project project = null;
-                BuildStep buildStep = null;
                 var user = await _context.Users.SingleOrDefaultAsync(u => u.IdentityId == postComment.IdentityId);
+
+                var newComment = new Comment();
+                newComment.Text = postComment.Text;
+                newComment.CreatedAt = DateTime.UtcNow;
+                newComment.EditedAt = DateTime.UtcNow;
+                newComment.User = user;
+
                 if (postComment.ProjectId != null)
                 {
-                    project = await _context.Projects.FindAsync(postComment.ProjectId);
+                    newComment.Project = await _context.Projects.FindAsync(postComment.ProjectId);
                 }
+
                 if (postComment.BuildStepId != null)
                 {
-                    buildStep = await _context.BuildSteps.FindAsync(postComment.BuildStepId);
+                    newComment.BuildStep = await _context.BuildSteps.FindAsync(postComment.BuildStepId);
                 }
-                
-                var newComment = new Comment()
-                {
-                    Text = postComment.Text,
-                    CreatedAt = DateTime.UtcNow,
-                    EditedAt = DateTime.UtcNow,
-                    User = user,
-                    Project = project,
-                    BuildStep = buildStep,
-                };
 
                 _context.Comments.Add(newComment);
                 await _context.SaveChangesAsync();
 
                 // Return the list of new comments
-                var result = await GetCommentDtos(newComment.ProjectId);
+                List<CommentDto> result = null;
+                if (newComment.ProjectId.HasValue)
+                {
+                    result = await GetCommentDtos(newComment.ProjectId.Value);
+                }
+                if (newComment.BuildStepId.HasValue)
+                {
+                    result = await GetCommentDtos(0, newComment.BuildStepId.Value);
+                }
+
                 if (result != null)
                 {
                     return result;
@@ -185,7 +211,7 @@ namespace WebAPI.Controllers
             }
         }
 
-        // POST: api/ChildComments
+        // POST: api/Comments/ChildComments
         //[Authorize]
         [HttpPost("ChildComments/")]
         public async Task<ActionResult<List<ChildCommentDto>>> PostChildComment(PostChildCommentDto postChildComment)
@@ -259,6 +285,11 @@ namespace WebAPI.Controllers
             return _context.Comments.Any(e => e.Id == id);
         }
 
+        private bool ChildCommentExists(int id)
+        {
+            return _context.ChildComments.Any(e => e.Id == id);
+        }
+
         private static List<CommentDto> MapCommentDtos(ICollection<Comment> comments)
         {
             var newCommentList = new List<CommentDto>();
@@ -285,18 +316,35 @@ namespace WebAPI.Controllers
             return newCommentList;
         }
 
-        private async Task<List<CommentDto>> GetCommentDtos(int projectId)
+        private async Task<List<CommentDto>> GetCommentDtos(int projectId = 0, int buildStepId = 0)
         {
             try
             {
-                var comments = await _context.Comments
-                    .Include(c => c.User)
-                    .Include(c => c.Children)
-                    .Where(c => c.Project.Id == projectId)
-                    .OrderBy(c => c.CreatedAt)
-                    .Reverse()
-                    .AsSplitQuery()
-                    .ToListAsync();
+                // Build the db query
+                List<Comment> comments = new List<Comment>();
+                if (projectId != 0)
+                {
+                    comments = await _context.Comments
+                       .Include(c => c.User)
+                       .Include(c => c.Children)
+                       .Where(c => c.ProjectId == projectId)
+                       .OrderBy(c => c.CreatedAt)
+                       .Reverse()
+                       .AsSplitQuery()
+                       .ToListAsync();
+                }
+                if (buildStepId != 0)
+                {
+                    comments = await _context.Comments
+                       .Include(c => c.User)
+                       .Include(c => c.Children)
+                       .Where(c => c.BuildStepId == buildStepId)
+                       .OrderBy(c => c.CreatedAt)
+                       .Reverse()
+                       .AsSplitQuery()
+                       .ToListAsync();
+                }
+
 
                 var newCommentList = new List<CommentDto>();
                 foreach (var comment in comments)
@@ -313,7 +361,7 @@ namespace WebAPI.Controllers
                         Text = comment.Text,
                         EditedAt = comment.EditedAt,
                         User = basicUserDto,
-                        ProjectId = comment.ProjectId,
+                        //ProjectId = comment.ProjectId,
                         ChildCount = comment.Children.Count,
                     };
 

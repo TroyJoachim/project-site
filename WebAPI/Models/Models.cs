@@ -121,8 +121,10 @@ namespace WebAPI.Models
         public DateTime EditedAt { get; set; }
         public User User { get; set; }
 
-        public int ProjectId { get; set; }
+        public int? ProjectId { get; set; }
         public Project Project { get; set; }
+
+        public int? BuildStepId { get; set; }
         public BuildStep BuildStep { get; set; }
         public ICollection<ChildComment> Children { get; set; }
     }

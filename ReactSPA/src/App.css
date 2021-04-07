@@ -53,6 +53,13 @@ fieldset[disabled] .btn-mint.active {
   border-radius: 0.2rem;
 }
 
+.btn-link-sm {
+  padding: .25rem .5rem;
+  font-size: .875rem;
+  line-height: 1.5;
+  border-radius: .2rem;
+}
+
 /* Application loading screen */
 .loading-container {
   height: 100vh;

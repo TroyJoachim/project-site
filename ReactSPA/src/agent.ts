@@ -315,10 +315,26 @@ export async function uncollectProject(projectId: number, identityId: string) {
   }
 }
 
-export async function getComments(projectId: number) {
+export async function getProjectComments(projectId: number) {
   try {
     const response = await http.get<IComment[]>(
       "/api/comments/projectcomments/" + projectId.toString(),
+      {
+        // Manually map the response to a Typescript interface.
+        transformResponse: [(response) => JSON.parse(response)],
+      }
+    );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function getBuildStepComments(buildStepId: number) {
+  try {
+    const response = await http.get<IComment[]>(
+      "/api/comments/buildstepcomments/" + buildStepId.toString(),
       {
         // Manually map the response to a Typescript interface.
         transformResponse: [(response) => JSON.parse(response)],
@@ -353,6 +369,7 @@ export async function createComment(
   buildStepId: number | null
 ) {
   try {
+    console.log(buildStepId);
     const response = await http.post<IComment[]>(
       "/api/comments",
       JSON.stringify({
@@ -425,6 +442,36 @@ export async function deleteComment(id: number) {
 export async function deleteChildComment(id: number) {
   try {
     const response = await http.delete("/api/comments/childcomments/" + id.toString(), {
+      headers: {
+        "Content-type": "application/json",
+        Authorization: `Bearer ${getUserToken()}`,
+      },
+    });
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function reportComment(id: number) {
+  try {
+    const response = await http.put("/api/comments/reportcomments/" + id.toString(), {
+      headers: {
+        "Content-type": "application/json",
+        Authorization: `Bearer ${getUserToken()}`,
+      },
+    });
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function reportChildComment(id: number) {
+  try {
+    const response = await http.put("/api/comments/reportchildcomments/" + id.toString(), {
       headers: {
         "Content-type": "application/json",
         Authorization: `Bearer ${getUserToken()}`,

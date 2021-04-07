@@ -1,16 +1,18 @@
 import React, { useEffect } from "react";
 import Button from "react-bootstrap/Button";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Form from "react-bootstrap/Form";
 import Collapse from "react-bootstrap/Collapse";
 import { useHookstate, State } from "@hookstate/core";
 import {
   createComment,
-  getComments,
+  getProjectComments,
+  getBuildStepComments,
   deleteComment,
   createChildComment,
   getChildComments,
   deleteChildComment,
+  reportComment,
+  reportChildComment,
 } from "./agent";
 import { IChildComment, IComment } from "./types";
 import { localizeDateTime } from "./helpers";
@@ -54,10 +56,10 @@ function AddComment(props: {
       props.projectId ? props.projectId : null,
       props.buildStepId ? props.buildStepId : null
     );
+
     console.log(response);
     if (response && response.status == 200) {
       setComments(response.data);
-      console.log(response);
       text.set("");
       props.commentCreated();
     }
@@ -72,19 +74,24 @@ function AddComment(props: {
         onChange={handleEnterText}
         required
       />
-      <ButtonGroup
-        aria-label="Cancel or Reply"
-        size="sm"
-        className="float-right mt-2"
-        style={{ width: "110px" }}
-      >
-        <Button variant="secondary" onClick={handleCancel}>
+      <div className="float-right mt-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          className="mr-2"
+          onClick={handleCancel}
+        >
           Cancel
         </Button>
-        <Button variant="primary" type="submit" disabled={loading.value}>
+        <Button
+          variant="primary"
+          size="sm"
+          type="submit"
+          disabled={loading.value}
+        >
           Reply
         </Button>
-      </ButtonGroup>
+      </div>
     </Form>
   );
 }
@@ -114,9 +121,6 @@ function AddChildComment(props: {
     event.preventDefault();
     event.stopPropagation();
 
-    console.log(props.parentId);
-    console.log(props.inReplyTo);
-
     // Submit the form
     const response = await createChildComment(
       text.value,
@@ -141,45 +145,103 @@ function AddChildComment(props: {
         onChange={handleEnterText}
         required
       />
-      <ButtonGroup
-        aria-label="Cancel or Reply"
-        size="sm"
-        className="float-right mt-2"
-        style={{ width: "110px" }}
-      >
-        <Button variant="secondary" onClick={handleCancel}>
+      <div className="float-right mt-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          className="mr-2"
+          onClick={handleCancel}
+        >
           Cancel
         </Button>
-        <Button variant="primary" type="submit" disabled={loading.value}>
+        <Button
+          variant="primary"
+          size="sm"
+          type="submit"
+          disabled={loading.value}
+        >
           Reply
         </Button>
-      </ButtonGroup>
+      </div>
     </Form>
   );
 }
 
-function ReportComment(props: { toggleReport: State<boolean> }) {
-  const toggleReport = useHookstate(props.toggleReport);
-  function handleCancel() {
-    toggleReport.set(false);
-  }
-  return (
-    <Form className="mt-2">
-      <p>Report this comment as spam or inappropriate?</p>
-      <Button
-        variant="secondary"
-        size="sm"
-        className="mr-2"
-        onClick={handleCancel}
-      >
-        Cancel
-      </Button>
-      <Button variant="primary" size="sm">
-        Report
-      </Button>
-    </Form>
-  );
-}
+// function ReportComment(props: {
+//   commentId: number;
+//   toggleReport: State<boolean>;
+// }) {
+//   const toggleReport = useHookstate(props.toggleReport);
+//   const loading = useHookstate(false);
+
+//   function handleCancel() {
+//     toggleReport.set(false);
+//   }
+
+//   async function handleReport() {
+//     loading.set(true);
+//     const response = await reportComment(props.commentId);
+
+//     if (response && response.status === 204) {
+//       // Update the state and disable the button
+//     }
+//     loading.set(false);
+//   }
+
+//   return (
+//     <Form className="mt-2">
+//       <p>Report this comment as spam or inappropriate?</p>
+//       <Button
+//         variant="secondary"
+//         size="sm"
+//         className="mr-2"
+//         onClick={handleCancel}
+//       >
+//         Cancel
+//       </Button>
+//       <Button variant="primary" size="sm" onClick={handleReport}>
+//         Report
+//       </Button>
+//     </Form>
+//   );
+// }
+
+// function ReportChildComment(props: {
+//   childCommentId: number;
+//   toggleReport: State<boolean>;
+// }) {
+//   const toggleReport = useHookstate(props.toggleReport);
+//   const loading = useHookstate(false);
+
+//   function handleCancel() {
+//     toggleReport.set(false);
+//   }
+
+//   async function handleReport() {
+//     const response = await reportComment(props.childCommentId);
+
+//     if (response && response.status === 204) {
+//       // Do something
+//     }
+//   }
+
+//   return (
+//     <Form className="mt-2">
+//       <p>Report this comment as spam or inappropriate?</p>
+//       <Button
+//         variant="secondary"
+//         size="sm"
+//         className="mr-2"
+//         onClick={handleCancel}
+//       >
+//         Cancel
+//       </Button>
+//       <Button variant="primary" size="sm" onClick={handleReport}>
+//         Report
+//       </Button>
+//     </Form>
+//   );
+// }
 
 function DeleteComment(props: {
   id: number;
@@ -235,11 +297,13 @@ function DeleteComment(props: {
 function DeleteChildComment(props: {
   id: number;
   parentId: number;
+  toggleDelete: State<boolean>;
   commentDeleted: () => void;
 }) {
   const [childComments, setChildComments] = useRecoilState(
     childCommentState(props.parentId)
   );
+  const toggleDelete = useHookstate(props.toggleDelete);
 
   async function handleDelete() {
     const response = await deleteChildComment(props.id);
@@ -252,10 +316,19 @@ function DeleteChildComment(props: {
     }
   }
 
+  function handleCancel() {
+    toggleDelete.set(false);
+  }
+
   return (
     <Form className="mt-2">
       <p>Delete this comment?</p>
-      <Button variant="secondary" size="sm" className="mr-2">
+      <Button
+        variant="secondary"
+        size="sm"
+        className="mr-2"
+        onClick={handleCancel}
+      >
         Cancel
       </Button>
       <Button variant="danger" size="sm" onClick={handleDelete}>
@@ -303,13 +376,13 @@ function Comment(props: {
     toggleDelete.set(false);
   }
 
-  function handleToggleReport() {
-    toggleReport.set(!toggleReport.value);
-    // close the other ones
-    toggleChildren.set(false);
-    toggleReply.set(false);
-    toggleDelete.set(false);
-  }
+  // function handleToggleReport() {
+  //   toggleReport.set(!toggleReport.value);
+  //   // close the other ones
+  //   toggleChildren.set(false);
+  //   toggleReply.set(false);
+  //   toggleDelete.set(false);
+  // }
 
   function handleToggleDelete() {
     toggleDelete.set(!toggleDelete.value);
@@ -393,21 +466,21 @@ function Comment(props: {
                 <></>
               )}
               <button
-                className="btn btn-link"
+                className="btn btn-link btn-link-sm"
                 type="button"
                 onClick={handleToggleReply}
               >
                 Reply
               </button>
-              <button
-                className="btn btn-link"
+              {/* <button
+                className="btn btn-link btn-link-sm"
                 type="button"
                 onClick={handleToggleReport}
               >
                 Report
-              </button>
+              </button> */}
               <button
-                className="btn btn-link"
+                className="btn btn-link btn-link-sm"
                 type="button"
                 onClick={handleToggleDelete}
               >
@@ -427,13 +500,16 @@ function Comment(props: {
                 </div>
               </Collapse>
             </div>
-            <div className="d-flex flex-row">
+            {/* <div className="d-flex flex-row">
               <Collapse in={toggleReport.value} className="w-100">
                 <div>
-                  <ReportComment toggleReport={toggleReport} />
+                  <ReportComment
+                    commentId={props.comment.id}
+                    toggleReport={toggleReport}
+                  />
                 </div>
               </Collapse>
-            </div>
+            </div> */}
             <div className="d-flex flex-row">
               <Collapse in={toggleReply.value} className="w-100">
                 <div className="flex-fill">
@@ -535,12 +611,12 @@ function ChildComment(props: {
     toggleDelete.set(false);
   }
 
-  function handleToggleReport() {
-    toggleReport.set(!toggleReport.value);
-    // close the other ones
-    toggleReply.set(false);
-    toggleDelete.set(false);
-  }
+  // function handleToggleReport() {
+  //   toggleReport.set(!toggleReport.value);
+  //   // close the other ones
+  //   toggleReply.set(false);
+  //   toggleDelete.set(false);
+  // }
 
   function handleToggleDelete() {
     toggleDelete.set(!toggleDelete.value);
@@ -610,21 +686,21 @@ function ChildComment(props: {
           >
             <div className="d-flex flex-row">
               <button
-                className="btn btn-link"
+                className="btn btn-link btn-link-sm"
                 type="button"
                 onClick={handleToggleReply}
               >
                 Reply
               </button>
-              <button
-                className="btn btn-link"
+              {/* <button
+                className="btn btn-link btn-link-sm"
                 type="button"
                 onClick={handleToggleReport}
               >
                 Report
-              </button>
+              </button> */}
               <button
-                className="btn btn-link"
+                className="btn btn-link btn-link-sm"
                 type="button"
                 onClick={handleToggleDelete}
               >
@@ -637,18 +713,22 @@ function ChildComment(props: {
                   <DeleteChildComment
                     id={props.childComment.id}
                     parentId={props.parentId}
+                    toggleDelete={toggleDelete}
                     commentDeleted={handleCommentDeleted}
                   />
                 </div>
               </Collapse>
             </div>
-            <div className="d-flex flex-row">
+            {/* <div className="d-flex flex-row">
               <Collapse in={toggleReport.value} className="w-100">
                 <div>
-                  <ReportComment toggleReport={toggleReport} />
+                  <ReportChildComment
+                    childCommentId={props.childComment.id}
+                    toggleReport={toggleReport}
+                  />
                 </div>
               </Collapse>
-            </div>
+            </div> */}
             <div className="d-flex flex-row">
               <Collapse in={toggleReply.value} className="w-100">
                 <div className="flex-fill">
@@ -672,7 +752,6 @@ export default function CommentCard(props: {
   projectId?: number;
   buildStepId?: number;
 }) {
-  // TODO: This should never be the case
   let id = "";
   if (props.projectId) {
     id = "project-" + props.projectId.toString();
@@ -686,21 +765,29 @@ export default function CommentCard(props: {
   useEffect(() => {
     if (comments.length > 0) return;
 
-    const getCommentFunc = async (id: number) => {
-      const response = await getComments(id);
-
-      console.log(response);
-      if (response && response.status == 200) {
-        //comments.set(response.data);
-        //const commentTree = createDataTree(response.data);
-
-        setComments(response.data);
-      }
-    };
+    // Get project comments
     if (props.projectId) {
+      const getCommentFunc = async (id: number) => {
+        const response = await getProjectComments(id);
+
+        console.log(response);
+        if (response && response.status == 200) {
+          setComments(response.data);
+        }
+      };
       getCommentFunc(props.projectId);
     }
+
+    // Get buildstep comments
     if (props.buildStepId) {
+      const getCommentFunc = async (id: number) => {
+        const response = await getBuildStepComments(id);
+
+        console.log(response);
+        if (response && response.status == 200) {
+          setComments(response.data);
+        }
+      };
       getCommentFunc(props.buildStepId);
     }
   }, []);
@@ -726,6 +813,7 @@ export default function CommentCard(props: {
           <div className="flex-fill">
             <AddComment
               projectId={props.projectId}
+              buildStepId={props.buildStepId}
               toggleReply={toggleAddComment}
               commentCreated={handleAddComment}
             />
@@ -733,7 +821,12 @@ export default function CommentCard(props: {
         </Collapse>
       </div>
       {comments.map((comment, i) => (
-        <Comment key={i} projectId={projectId} comment={comment} />
+        <Comment
+          key={i}
+          projectId={projectId}
+          buildStepId={props.buildStepId}
+          comment={comment}
+        />
       ))}
     </>
   );
