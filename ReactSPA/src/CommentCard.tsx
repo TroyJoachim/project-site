@@ -11,8 +11,8 @@ import {
   createChildComment,
   getChildComments,
   deleteChildComment,
-  reportComment,
-  reportChildComment,
+  editComment,
+  editChildComment,
 } from "./agent";
 import { IChildComment, IComment } from "./types";
 import { localizeDateTime } from "./helpers";
@@ -356,6 +356,9 @@ function Comment(props: {
   const toggleReport = useHookstate(false);
   const toggleDelete = useHookstate(false);
   const loadChildren = useHookstate(false);
+  const editingMode = useHookstate(false);
+  const editText = useHookstate(props.comment.text);
+  const isLoading = useHookstate(false);
 
   function handleToggleChildren() {
     toggleChildren.set(!toggleChildren.value);
@@ -392,6 +395,10 @@ function Comment(props: {
     toggleReply.set(false);
   }
 
+  function handleEdit() {
+    editingMode.set(true);
+  }
+
   // Close the reply form and show the child comments
   function handleChildCommentCreated() {
     toggleReply.set(false);
@@ -415,11 +422,42 @@ function Comment(props: {
     toggleDelete.set(false);
   }
 
+  function handleEnterEditText(elem: React.ChangeEvent<HTMLTextAreaElement>) {
+    editText.set(elem.target.value);
+  }
+
+  function handleCancelEdit() {
+    editingMode.set(false);
+  }
+
+  async function handleOnSubmitEdit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    isLoading.set(true);
+    const response = await editComment(props.comment.id, editText.value);
+
+    console.log(response);
+    if (response && response.status === 204) {
+      // Update the text value for the comment in state
+      const newCommentList = comments.map((c) => {
+        if (c.id === props.comment.id) {
+          return { ...c, text: editText.value };
+        } else {
+          return c;
+        }
+      });
+      setComments(newCommentList);
+      editingMode.set(false);
+    }
+    isLoading.set(false);
+  }
+
   // If there aren't any children then we need to hide the View Replies link
   function displayChildrenLink() {
     return props.comment.childCount > 0
-      ? "btn btn-link"
-      : "btn btn-link d-none";
+      ? "btn btn-link btn-link-sm"
+      : "btn btn-link btn-link-sm d-none";
   }
 
   const imageUrl =
@@ -447,8 +485,39 @@ function Comment(props: {
           </div>
 
           <div className="d-flex flex-row">
-            <p className="mb-1">{props.comment.text}</p>
+            {editingMode.value ? (
+              <Form className="mb-2 pt-2 w-100" onSubmit={handleOnSubmitEdit}>
+                <Form.Control
+                  as="textarea"
+                  value={editText.value}
+                  rows={3}
+                  onChange={handleEnterEditText}
+                  required
+                />
+                <div className="mt-1 float-right">
+                  <Button
+                    variant="secondary"
+                    className="mr-2 btn-xs"
+                    onClick={handleCancelEdit}
+                    disabled={isLoading.value}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    type="submit"
+                    className="btn-xs"
+                    disabled={isLoading.value}
+                  >
+                    Update
+                  </Button>
+                </div>
+              </Form>
+            ) : (
+              <p className="mb-1">{props.comment.text}</p>
+            )}
           </div>
+
           <div
             className="d-flex flex-column comment-children"
             style={{ marginLeft: "-20px" }}
@@ -479,6 +548,13 @@ function Comment(props: {
               >
                 Report
               </button> */}
+              <button
+                className="btn btn-link btn-link-sm"
+                type="button"
+                onClick={handleEdit}
+              >
+                Edit
+              </button>
               <button
                 className="btn btn-link btn-link-sm"
                 type="button"
@@ -600,9 +676,15 @@ function ChildComment(props: {
     id = "buildstep-" + props.buildStepId.toString();
   }
   const [comments, setComments] = useRecoilState(commentState(id));
+  const [childComments, setChildComments] = useRecoilState(
+    childCommentState(props.parentId)
+  );
   const toggleReply = useHookstate(false);
   const toggleReport = useHookstate(false);
   const toggleDelete = useHookstate(false);
+  const editingMode = useHookstate(false);
+  const editText = useHookstate(props.childComment.text);
+  const isLoading = useHookstate(false);
 
   function handleToggleReply() {
     toggleReply.set(!toggleReply.value);
@@ -625,6 +707,10 @@ function ChildComment(props: {
     toggleReply.set(false);
   }
 
+  function handleEdit() {
+    editingMode.set(true);
+  }
+
   // Close the reply form and show the child comments
   function handleChildCommentCreated() {
     toggleReply.set(false);
@@ -644,6 +730,40 @@ function ChildComment(props: {
     console.log(newCommentList);
     console.log(comments);
     setComments(newCommentList);
+  }
+
+  function handleEnterEditText(elem: React.ChangeEvent<HTMLTextAreaElement>) {
+    editText.set(elem.target.value);
+  }
+
+  function handleCancelEdit() {
+    editingMode.set(false);
+  }
+
+  async function handleOnSubmitEdit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    isLoading.set(true);
+    const response = await editChildComment(
+      props.childComment.id,
+      editText.value
+    );
+
+    console.log(response);
+    if (response && response.status === 204) {
+      // Update the text value for the comment in state
+      const newCommentList = childComments.map((c) => {
+        if (c.id === props.childComment.id) {
+          return { ...c, text: editText.value };
+        } else {
+          return c;
+        }
+      });
+      setChildComments(newCommentList);
+      editingMode.set(false);
+    }
+    isLoading.set(false);
   }
 
   const imageUrl =
@@ -671,14 +791,46 @@ function ChildComment(props: {
           </div>
 
           <div className="d-flex flex-row">
-            {props.childComment.inReplyTo ? (
-              <Link to="/foobar" className="mr-2">
-                @{props.childComment.inReplyTo.username}
-              </Link>
+            {editingMode.value ? (
+              <Form className="mb-2 pt-2 w-100" onSubmit={handleOnSubmitEdit}>
+                <Form.Control
+                  as="textarea"
+                  value={editText.value}
+                  rows={3}
+                  onChange={handleEnterEditText}
+                  required
+                />
+                <div className="mt-1 float-right">
+                  <Button
+                    variant="secondary"
+                    className="mr-2 btn-xs"
+                    onClick={handleCancelEdit}
+                    disabled={isLoading.value}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    type="submit"
+                    className="btn-xs"
+                    disabled={isLoading.value}
+                  >
+                    Update
+                  </Button>
+                </div>
+              </Form>
             ) : (
-              <></>
+              <>
+                {props.childComment.inReplyTo ? (
+                  <Link to="/foobar" className="mr-2">
+                    @{props.childComment.inReplyTo.username}
+                  </Link>
+                ) : (
+                  <></>
+                )}
+                <p className="mb-1">{props.childComment.text}</p>
+              </>
             )}
-            <p className="mb-1">{props.childComment.text}</p>
           </div>
           <div
             className="d-flex flex-column comment-children"
@@ -699,6 +851,13 @@ function ChildComment(props: {
               >
                 Report
               </button> */}
+              <button
+                className="btn btn-link btn-link-sm"
+                type="button"
+                onClick={handleEdit}
+              >
+                Edit
+              </button>
               <button
                 className="btn btn-link btn-link-sm"
                 type="button"

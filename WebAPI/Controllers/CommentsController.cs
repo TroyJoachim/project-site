@@ -124,21 +124,15 @@ namespace WebAPI.Controllers
         }
 
         // PUT: api/Comments/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         //[Authorize]
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutComment(int id, PutCommentDto newComment)
+        public async Task<IActionResult> PutComment(int id, PutCommentDto commentDto)
         {
             try
             {
-                if (id != newComment.Id)
-                {
-                    return BadRequest();
-                }
-
                 // Get the comment and update the text and EditedAt properties
-                var comment = await _context.Comments.FindAsync(newComment.Id);
-                comment.Text = newComment.Text;
+                var comment = await _context.Comments.FindAsync(id);
+                comment.Text = commentDto.Text;
                 comment.EditedAt = DateTime.UtcNow;
 
                 _context.Entry(comment).State = EntityState.Modified;
@@ -147,6 +141,36 @@ namespace WebAPI.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!CommentExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
+        // PUT: api/Comments/ChildComment/5
+        //[Authorize]
+        [HttpPut("ChildComments/{id}")]
+        public async Task<IActionResult> PutChildComment(int id, PutCommentDto commentDto)
+        {
+            try
+            {
+                // Get the comment and update the text and EditedAt properties
+                var comment = await _context.ChildComments.FindAsync(id);
+                comment.Text = commentDto.Text;
+                comment.EditedAt = DateTime.UtcNow;
+
+                _context.Entry(comment).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!ChildCommentExists(id))
                 {
                     return NotFound();
                 }

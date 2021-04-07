@@ -12,7 +12,7 @@ import {
   IBuildStep,
   IFile,
   IComment,
-  IChildComment
+  IChildComment,
 } from "./types";
 
 // Configure the global level for aws storage.
@@ -397,7 +397,7 @@ export async function createComment(
 export async function createChildComment(
   text: string,
   parentId: number,
-  inReplyTo: string | undefined,
+  inReplyTo: string | undefined
 ) {
   try {
     const response = await http.post<IChildComment[]>(
@@ -441,12 +441,57 @@ export async function deleteComment(id: number) {
 
 export async function deleteChildComment(id: number) {
   try {
-    const response = await http.delete("/api/comments/childcomments/" + id.toString(), {
-      headers: {
-        "Content-type": "application/json",
-        Authorization: `Bearer ${getUserToken()}`,
-      },
-    });
+    const response = await http.delete(
+      "/api/comments/childcomments/" + id.toString(),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+      }
+    );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function editComment(id: number, text: string) {
+  try {
+    const response = await http.put(
+      "/api/comments/" + id.toString(),
+      JSON.stringify({
+        text: text,
+      }),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+      }
+    );
+    return response;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function editChildComment(id: number, text: string) {
+  try {
+    const response = await http.put(
+      "/api/comments/childcomments/" + id.toString(),
+      JSON.stringify({
+        text: text,
+      }),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+      }
+    );
     return response;
   } catch (err) {
     console.log(err);
@@ -456,12 +501,15 @@ export async function deleteChildComment(id: number) {
 
 export async function reportComment(id: number) {
   try {
-    const response = await http.put("/api/comments/reportcomments/" + id.toString(), {
-      headers: {
-        "Content-type": "application/json",
-        Authorization: `Bearer ${getUserToken()}`,
-      },
-    });
+    const response = await http.put(
+      "/api/comments/reportcomments/" + id.toString(),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+      }
+    );
     return response;
   } catch (err) {
     console.log(err);
@@ -471,12 +519,15 @@ export async function reportComment(id: number) {
 
 export async function reportChildComment(id: number) {
   try {
-    const response = await http.put("/api/comments/reportchildcomments/" + id.toString(), {
-      headers: {
-        "Content-type": "application/json",
-        Authorization: `Bearer ${getUserToken()}`,
-      },
-    });
+    const response = await http.put(
+      "/api/comments/reportchildcomments/" + id.toString(),
+      {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${getUserToken()}`,
+        },
+      }
+    );
     return response;
   } catch (err) {
     console.log(err);

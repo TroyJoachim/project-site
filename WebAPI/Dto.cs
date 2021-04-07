@@ -136,7 +136,6 @@ namespace WebAPI.Dto
 
     public class PutCommentDto
     {
-        public int Id { get; set; }
         public string Text { get; set; }
     }
 
