@@ -19,6 +19,7 @@ import { localizeDateTime } from "./helpers";
 import { commentState, childCommentState } from "./state";
 import { useRecoilState } from "recoil";
 import { Link } from "react-router-dom";
+import { globalState } from "./globalState";
 
 function AddComment(props: {
   projectId?: number;
@@ -359,6 +360,7 @@ function Comment(props: {
   const editingMode = useHookstate(false);
   const editText = useHookstate(props.comment.text);
   const isLoading = useHookstate(false);
+  const gState = useHookstate(globalState);
 
   function handleToggleChildren() {
     toggleChildren.set(!toggleChildren.value);
@@ -396,7 +398,7 @@ function Comment(props: {
   }
 
   function handleEdit() {
-    editingMode.set(true);
+    editingMode.set(!editingMode.value);
   }
 
   // Close the reply form and show the child comments
@@ -452,6 +454,10 @@ function Comment(props: {
     }
     isLoading.set(false);
   }
+
+  // Check if the comment belongs to the logged in user
+  const isThem = () =>
+    gState.identityId.value === props.comment.user.identityId;
 
   // If there aren't any children then we need to hide the View Replies link
   function displayChildrenLink() {
@@ -534,13 +540,18 @@ function Comment(props: {
               ) : (
                 <></>
               )}
-              <button
-                className="btn btn-link btn-link-sm"
-                type="button"
-                onClick={handleToggleReply}
-              >
-                Reply
-              </button>
+              {gState.isAuthenticated.value ? (
+                <button
+                  className="btn btn-link btn-link-sm"
+                  type="button"
+                  onClick={handleToggleReply}
+                >
+                  Reply
+                </button>
+              ) : (
+                <></>
+              )}
+
               {/* <button
                 className="btn btn-link btn-link-sm"
                 type="button"
@@ -548,20 +559,28 @@ function Comment(props: {
               >
                 Report
               </button> */}
-              <button
-                className="btn btn-link btn-link-sm"
-                type="button"
-                onClick={handleEdit}
-              >
-                Edit
-              </button>
-              <button
-                className="btn btn-link btn-link-sm"
-                type="button"
-                onClick={handleToggleDelete}
-              >
-                Delete
-              </button>
+              {isThem() ? (
+                <button
+                  className="btn btn-link btn-link-sm"
+                  type="button"
+                  onClick={handleEdit}
+                >
+                  Edit
+                </button>
+              ) : (
+                <></>
+              )}
+              {isThem() ? (
+                <button
+                  className="btn btn-link btn-link-sm"
+                  type="button"
+                  onClick={handleToggleDelete}
+                >
+                  Delete
+                </button>
+              ) : (
+                <></>
+              )}
             </div>
             <div className="d-flex flex-row">
               <Collapse in={toggleDelete.value} className="w-100">
@@ -685,6 +704,7 @@ function ChildComment(props: {
   const editingMode = useHookstate(false);
   const editText = useHookstate(props.childComment.text);
   const isLoading = useHookstate(false);
+  const gState = useHookstate(globalState);
 
   function handleToggleReply() {
     toggleReply.set(!toggleReply.value);
@@ -708,7 +728,7 @@ function ChildComment(props: {
   }
 
   function handleEdit() {
-    editingMode.set(true);
+    editingMode.set(!editingMode.value);
   }
 
   // Close the reply form and show the child comments
@@ -765,6 +785,10 @@ function ChildComment(props: {
     }
     isLoading.set(false);
   }
+
+  // Check if the comment belongs to the logged in user
+  const isThem = () =>
+    gState.identityId.value === props.childComment.user.identityId;
 
   const imageUrl =
     "https://d1sam1rvgl833u.cloudfront.net/fit-in/40x40/protected/" +
@@ -837,13 +861,17 @@ function ChildComment(props: {
             style={{ marginLeft: "-40px" }}
           >
             <div className="d-flex flex-row">
-              <button
-                className="btn btn-link btn-link-sm"
-                type="button"
-                onClick={handleToggleReply}
-              >
-                Reply
-              </button>
+              {gState.isAuthenticated.value ? (
+                <button
+                  className="btn btn-link btn-link-sm"
+                  type="button"
+                  onClick={handleToggleReply}
+                >
+                  Reply
+                </button>
+              ) : (
+                <></>
+              )}
               {/* <button
                 className="btn btn-link btn-link-sm"
                 type="button"
@@ -851,20 +879,29 @@ function ChildComment(props: {
               >
                 Report
               </button> */}
-              <button
-                className="btn btn-link btn-link-sm"
-                type="button"
-                onClick={handleEdit}
-              >
-                Edit
-              </button>
-              <button
-                className="btn btn-link btn-link-sm"
-                type="button"
-                onClick={handleToggleDelete}
-              >
-                Delete
-              </button>
+
+              {isThem() ? (
+                <button
+                  className="btn btn-link btn-link-sm"
+                  type="button"
+                  onClick={handleEdit}
+                >
+                  Edit
+                </button>
+              ) : (
+                <></>
+              )}
+              {isThem() ? (
+                <button
+                  className="btn btn-link btn-link-sm"
+                  type="button"
+                  onClick={handleToggleDelete}
+                >
+                  Delete
+                </button>
+              ) : (
+                <></>
+              )}
             </div>
             <div className="d-flex flex-row">
               <Collapse in={toggleDelete.value} className="w-100">
@@ -920,6 +957,7 @@ export default function CommentCard(props: {
   }
   const [comments, setComments] = useRecoilState(commentState(id));
   const toggleAddComment = useHookstate(false);
+  const gState = useHookstate(globalState);
 
   useEffect(() => {
     if (comments.length > 0) return;
@@ -960,13 +998,19 @@ export default function CommentCard(props: {
 
   return (
     <>
-      <button
-        className="btn btn-link"
-        type="button"
-        onClick={() => toggleAddComment.set(!toggleAddComment.value)}
-      >
-        Add Comment
-      </button>
+      {gState.isAuthenticated.value ? (
+        <button
+          className="btn btn-link"
+          type="button"
+          onClick={() => toggleAddComment.set(!toggleAddComment.value)}
+        >
+          Add Comment
+        </button>
+      ) : (
+        <Link className="btn btn-link" type="button" to="/sign-in">
+          Sign in to add a comment
+        </Link>
+      )}
       <div className="d-flex flex-row">
         <Collapse in={toggleAddComment.value} className="w-100">
           <div className="flex-fill">
