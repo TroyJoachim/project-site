@@ -119,6 +119,8 @@ namespace WebAPI.Models
         [Required]
         public DateTime CreatedAt { get; set; }
         public DateTime EditedAt { get; set; }
+
+        public int UserId { get; set; }
         public User User { get; set; }
 
         public int? ProjectId { get; set; }
@@ -135,7 +137,12 @@ namespace WebAPI.Models
         public string Text { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime EditedAt { get; set; }
+
+        public int UserId { get; set; }
         public User User { get; set; }
+
+        [ForeignKey("InReplyTo")]
+        public int? InReplyToId { get; set; }
         public User InReplyTo { get; set; }
 
         public int CommentId { get; set; }

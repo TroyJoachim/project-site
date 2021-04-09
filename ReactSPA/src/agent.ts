@@ -41,7 +41,7 @@ export async function getProjects() {
 
 export async function getProject(id: string) {
   try {
-    const response = await http.get("/api/projects/" + id, {
+    const response = await http.get<IProject>("/api/projects/" + id, {
       headers: {
         Authorization: `Bearer ${getUserToken()}`,
         "Content-type": "application/json",

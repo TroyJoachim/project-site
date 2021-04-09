@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using WebAPI.Models;
 using WebAPI.Dto;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace WebAPI.Controllers
 {
@@ -275,11 +276,26 @@ namespace WebAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteComment(int id)
         {
+            // Get the Sub claim from the JWT token
+            ClaimsIdentity identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity == null) return Unauthorized();
+            
+            var sub = identity.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+            if (sub == null) return Unauthorized();
+            
+            // Find authenticated user by Sub. This is a unique id use by AWS Cognito
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Sub == sub.Value);
+            if (user == null) return Unauthorized();
+
             var comment = await _context.Comments.FindAsync(id);
             if (comment == null)
             {
                 return NotFound();
             }
+
+            // Make sure the that user editing the comment is the owner of the comment
+            // The UI does this also, but we double check here.
+            if (comment.UserId != user.Id) return Unauthorized();
 
             _context.Comments.Remove(comment);
             await _context.SaveChangesAsync();

@@ -24,6 +24,7 @@ export interface IProject {
   uploadedImages: File[];
   files: IFile[];
   uploadedFiles: File[];
+  fakeFiles: IFakeFile[];
   user: IUser;
   liked: boolean;
   collected: boolean;
@@ -37,6 +38,12 @@ export interface IFile {
   size: number;
 }
 
+export interface IFakeFile {
+  name: string;
+  size: number;
+  url: string;
+}
+
 export interface IBuildStep {
   id: number;
   order: number;
@@ -45,6 +52,7 @@ export interface IBuildStep {
   images: IFile[];
   uploadedImages: File[];
   files: IFile[];
+  fakeFiles: IFakeFile[];
   uploadedFiles: File[];
 }
 

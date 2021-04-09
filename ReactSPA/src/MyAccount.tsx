@@ -6,7 +6,7 @@ import Row from "react-bootstrap/Row";
 import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Spinner from "react-bootstrap/Spinner";
-import { useHookstate, State, none } from "@hookstate/core";
+import { useHookstate } from "@hookstate/core";
 import Auth from "@aws-amplify/auth";
 import { Storage } from "aws-amplify";
 import { useFormik } from "formik";

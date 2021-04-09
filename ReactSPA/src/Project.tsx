@@ -65,6 +65,7 @@ function Project(props: any) {
     images: [],
     uploadedImages: [],
     files: [],
+    fakeFiles: [],
     uploadedFiles: [],
     buildSteps: [],
     user: initUser,

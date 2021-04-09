@@ -40,6 +40,7 @@ function CreateProject() {
     images: [],
     uploadedImages: [],
     files: [],
+    fakeFiles: [],
     uploadedFiles: [],
     buildSteps: [],
     user: initUser,
@@ -81,6 +82,7 @@ function CreateProject() {
       images: [],
       uploadedImages: [],
       files: [],
+      fakeFiles: [],
       uploadedFiles: [],
     };
     project.buildSteps.merge([initBuildStep]);
@@ -143,17 +145,16 @@ function CreateProject() {
       project.attach(Downgraded);
 
       // Submit form
-      createProject(project.get())
-        .then((response: any) => {
-          if (response && response.status === 201) {
-            console.log(response.status);
-            modalSuccess.set(true);
-            modalRoute.set("/project/" + response.data.id);
-          } else {
-            // TODO: handle error
-            modalSuccess.set(false);
-          }
-        })
+      createProject(project.get()).then((response: any) => {
+        if (response && response.status === 201) {
+          console.log(response.status);
+          modalSuccess.set(true);
+          modalRoute.set("/project/" + response.data.id);
+        } else {
+          // TODO: handle error
+          modalSuccess.set(false);
+        }
+      });
     }
   }
 
@@ -271,7 +272,10 @@ function CreateProject() {
                     validated={validated.get()}
                   />
                 </div>
-                <FileUpload files={project.uploadedFiles} />
+                <FileUpload
+                  files={project.uploadedFiles}
+                  fakeFiles={project.fakeFiles}
+                />
               </Form>
             </Card.Body>
           </Card>
@@ -366,7 +370,10 @@ function BuildStep(props: {
             />
           </div>
         </Form>
-        <FileUpload files={buildStep.uploadedFiles} />
+        <FileUpload
+          files={buildStep.uploadedFiles}
+          fakeFiles={buildStep.fakeFiles}
+        />
         <Button
           variant="danger"
           className="mt-3"
