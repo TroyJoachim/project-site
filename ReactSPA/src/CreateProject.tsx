@@ -13,11 +13,9 @@ import ImageUpload from "./ImageUpload";
 import TextEditor from "./TextEditor";
 import FileUpload from "./FileUpload";
 import UploadingProjectModal from "./UploadingProjectModal";
-import { PageSideNav, SideNavType } from "./PageSideNav";
 import { EditorState } from "draft-js";
-import { IBuildStep, IProject, IUser, ICategory } from "./types";
+import { IBuildStep, IProject, IUser, ICategory, SideNavType } from "./types";
 import { createProject, getProjectCategories } from "./agent";
-import { boolean } from "yup";
 
 function CreateProject() {
   const initUser: IUser = {
@@ -188,10 +186,6 @@ function CreateProject() {
   return (
     <Container fluid className="container-xxl">
       <Row>
-        <PageSideNav
-          buildSteps={project.buildSteps}
-          sideNavType={SideNavType.EditProject}
-        />
         <Col lg={8}>
           <Row className="mb-3">
             <Col>

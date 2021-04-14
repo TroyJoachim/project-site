@@ -207,14 +207,6 @@ code {
   max-height: 40px;
 }
 
-/* Footer Styles */
-
-footer {
-  position: relative;
-  height: 55px;
-  width: 100%;
-}
-
 /* Page Styles */
 
 /* Sidebar */
@@ -268,49 +260,6 @@ footer {
 
   #page-menu-open-btn {
     display: none;
-  }
-}
-
-/* Home Page */
-
-.home-project-title {
-  max-width: 220px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-  display: inline-block;
-}
-
-.home-btn-group {
-  display: flex;
-}
-
-.card-avatar {
-  border-radius: 50%;
-  max-height: 25px;
-}
-
-.home_page_card {
-  width: 302px;
-}
-@media (max-width: 1399px) {
-  #home_page_main_container {
-    max-width: 1300px;
-  }
-}
-@media (max-width: 1312px) {
-  #home_page_main_container {
-    max-width: 981px;
-  }
-}
-@media (max-width: 994px) {
-  #home_page_main_container {
-    max-width: 664px;
-  }
-}
-@media (max-width: 663px) {
-  #home_page_main_container {
-    width: min-content;
   }
 }
 

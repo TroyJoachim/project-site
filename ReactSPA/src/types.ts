@@ -1,5 +1,11 @@
 import { CognitoUser } from "@aws-amplify/auth";
 
+export enum SideNavType {
+  Project,
+  CreateProject,
+  EditProject,
+}
+
 export interface IHomeProject {
   id: number;
   title: string;

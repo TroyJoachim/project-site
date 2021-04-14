@@ -1,28 +1,29 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useHookstate, State } from "@hookstate/core";
 import { globalState } from "./globalState";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
-import Carousel from "react-bootstrap/Carousel";
-import Spinner from "react-bootstrap/Spinner";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 import Table from "react-bootstrap/Table";
 import Nav from "react-bootstrap/Nav";
 import draftToHtml from "draftjs-to-html";
 import CommentCard from "./CommentCard";
 import ReactHtmlParser from "react-html-parser";
-import { PageSideNav, SideNavType } from "./PageSideNav";
-import { IFile, IProject, IBuildStep, IUser, IComment } from "./types";
+import {
+  IFile,
+  IProject,
+  IBuildStep,
+  IUser,
+  IComment,
+  SideNavType,
+} from "./types";
 import { localizeDateTime, downloadBlob, humanFileSize } from "./helpers";
 import { Storage } from "aws-amplify";
 import {
   Link,
+  NavLink,
   Switch,
   Route,
   useRouteMatch,
-  useLocation,
   useHistory,
 } from "react-router-dom";
 import {
@@ -32,6 +33,50 @@ import {
   collectProject,
   uncollectProject,
 } from "./agent";
+
+import { default as MContainer } from "@material-ui/core/Container";
+import Typography from "@material-ui/core/Typography";
+import Paper from "@material-ui/core/Paper";
+import { default as MLink } from "@material-ui/core/Link";
+import { makeStyles } from "@material-ui/core/styles";
+import { default as MCarousel } from "react-material-ui-carousel";
+import { default as MButton } from "@material-ui/core/Button";
+import ThumbUpIcon from "@material-ui/icons/ThumbUp";
+import CollectionsIcon from "@material-ui/icons/Collections";
+import Divider from "@material-ui/core/Divider";
+
+const useStyles = makeStyles((theme) => ({
+  wrapper: {
+    marginTop: "20px",
+  },
+  image: {
+    maxHeight: "100%",
+    maxWidth: "100%",
+    width: "auto",
+    height: "auto",
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    margin: "auto",
+  },
+  pageNavIcon: {
+    marginRight: "2px",
+  },
+  active: {
+    backgroundColor: theme.palette.action.selected,
+  },
+  centerPageNav: {
+    margin: "10px 0",
+  },
+  paper: {
+    padding: "20px",
+  },
+  divider: {
+    margin: "10px 0",
+  },
+}));
 
 // If the URL doesn't have the category, then default it to the description category
 function defaultCategory(url: any, pathname: string) {
@@ -91,6 +136,7 @@ function Project(props: any) {
 function MainContentArea(props: { project: State<IProject> }) {
   let { path } = useRouteMatch();
   const project = useHookstate(props.project);
+  const classes = useStyles();
 
   // Checks if there are any files and if they are files and not images.
   const filesDisabled = () => {
@@ -113,106 +159,101 @@ function MainContentArea(props: { project: State<IProject> }) {
   };
 
   return (
-    <Container fluid className="container-xxl">
-      <Row>
-        <PageSideNav
-          buildSteps={props.project.buildSteps}
-          sideNavType={SideNavType.Project}
+    <div className={classes.wrapper}>
+      <MContainer maxWidth="md">
+        <Typography variant="h5">{project.title.value}</Typography>
+        <Typography variant="subtitle1">
+          Created by: <MLink>{project.user.username.value}</MLink> on{" "}
+          {localizeDateTime(project.createdAt.value)}
+        </Typography>
+        <DisplayImages images={project.files} />
+        <PillNav
+          project={project}
+          filesDisabled={filesDisabled()}
+          buildLogDisabled={buildLogDisabled()}
         />
-        <Col lg={8} className="ms-lg-auto px-md-4">
-          <div className="pt-3 pb-2 mb-3">
-            <h4>{props.project.title.get()}</h4>
-            <div>
-              Created By: <a href="#">Troy Joachim</a> on{" "}
-              {localizeDateTime(props.project.createdAt.get())}
-              <Button
-                variant="primary"
-                size="sm"
-                className="float-right"
-                as={Link}
-                to={"/edit-project/" + props.project.id.get()}
-              >
-                Edit
-              </Button>
-            </div>
-          </div>
+        <Switch>
+          <Route exact path={path}>
+            <Paper className={classes.paper}>
+              <Typography variant="h5">Description</Typography>
+              <Divider className={classes.divider} />
+              <Description text={project.description.value} />
+            </Paper>
+          </Route>
+          <Route path={`${path}/description`}>
+            <Paper className={classes.paper}>
+              <Typography variant="h5">Description</Typography>
+              <Divider className={classes.divider} />
+              <Description text={project.description.value} />
+            </Paper>
+          </Route>
+          <Route path={`${path}/comments`}>
+            <Paper className={classes.paper}>
+              <Typography variant="h5">Description</Typography>
+              <Divider className={classes.divider} />
+              <CommentCard projectId={project.id.value} />
+            </Paper>
+          </Route>
+          <Route path={`${path}/files`}>
+            <Card>
+              <Card.Body>
+                <h3 className="border-bottom pb-2">Project Files</h3>
+                <FileList files={props.project.files.value} />
+              </Card.Body>
+            </Card>
+          </Route>
+          <Route path={`${path}/build-log`}>
+            {props.project.buildSteps.value ? (
+              props.project.buildSteps.map((bs, index) => (
+                <ImageCard key={index} buildStep={bs} />
+              ))
+            ) : (
+              <></>
+            )}
+          </Route>
+        </Switch>
+      </MContainer>
+    </div>
 
-          <Card>
-            <DisplayImages images={props.project.files} />
-          </Card>
+    // <Container fluid className="container-xxl">
+    //   <Row>
+    //     <Col lg={8} className="ms-lg-auto px-md-4">
+    //       <div className="pt-3 pb-2 mb-3">
+    //         <h4>{props.project.title.get()}</h4>
+    //         <div>
+    //           Created By: <a href="#">Troy Joachim</a> on{" "}
+    //           {localizeDateTime(props.project.createdAt.get())}
+    //           <Button
+    //             variant="primary"
+    //             size="sm"
+    //             className="float-right"
+    //             as={Link}
+    //             to={"/edit-project/" + props.project.id.get()}
+    //           >
+    //             Edit
+    //           </Button>
+    //         </div>
+    //       </div>
 
-          <PillNav
-            project={project}
-            filesDisabled={filesDisabled()}
-            buildLogDisabled={buildLogDisabled()}
-          />
+    //       <Card>
+    //         <DisplayImages images={props.project.files} />
+    //       </Card>
 
-          <Switch>
-            <Route exact path={path}>
-              <Card>
-                <Card.Body>
-                  <h3 className="border-bottom pb-2">Description</h3>
-                  <Description text={props.project.description.get()} />
-                </Card.Body>
-              </Card>
-            </Route>
-            <Route path={`${path}/description`}>
-              <Card>
-                <Card.Body>
-                  <h3 className="border-bottom pb-2">Description</h3>
-                  <Description text={props.project.description.get()} />
-                </Card.Body>
-              </Card>
-            </Route>
-            <Route path={`${path}/comments`}>
-              <Card>
-                <Card.Body>
-                  <h3 className="border-bottom pb-2">Comments</h3>
-                  <CommentCard projectId={project.id.value} />
-                </Card.Body>
-              </Card>
-            </Route>
-            <Route path={`${path}/files`}>
-              <Card>
-                <Card.Body>
-                  <h3 className="border-bottom pb-2">Project Files</h3>
-                  <FileList files={props.project.files.value} />
-                </Card.Body>
-              </Card>
-            </Route>
-            <Route path={`${path}/build-log`}>
-              {props.project.buildSteps.value ? (
-                props.project.buildSteps.map((bs, index) => (
-                  <ImageCard key={index} buildStep={bs} />
-                ))
-              ) : (
-                <></>
-              )}
-            </Route>
-          </Switch>
-        </Col>
-      </Row>
-    </Container>
+    //       <PillNav
+    //         project={project}
+    //         filesDisabled={filesDisabled()}
+    //         buildLogDisabled={buildLogDisabled()}
+    //       />
+
+    //     </Col>
+    //   </Row>
+    // </Container>
   );
 }
 
 function DisplayImages(props: { images: State<IFile[]> }) {
   const state = useHookstate(props.images);
-
-  // Image style that keeps all the different size images inside the parent div.
-  // Need to make sure that the parent div is set to position relative.
-  const imgStyle = {
-    maxHeight: "100%",
-    maxWidth: "100%",
-    width: "auto",
-    height: "auto",
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    margin: "auto",
-  } as React.CSSProperties;
+  const classes = useStyles();
 
   // const loadingStyle = {
   //   margin: 0,
@@ -246,26 +287,24 @@ function DisplayImages(props: { images: State<IFile[]> }) {
   // }
   if (state.value && state.value.length > 1) {
     return (
-      <Carousel>
+      <MCarousel interval={10000}>
         {state
           .filter((file) => file.isImage.value === true)
           .map((file) => (
-            <Carousel.Item>
-              <div
-                className="bg-secondary"
-                style={{
-                  height: "400px",
-                  position: "relative",
-                }}
-              >
-                <img
-                  src={imageUrl(file.identityId.value, file.key.value)}
-                  style={imgStyle}
-                />
-              </div>
-            </Carousel.Item>
+            <div
+              className="bg-secondary"
+              style={{
+                height: "400px",
+                position: "relative",
+              }}
+            >
+              <img
+                src={imageUrl(file.identityId.value, file.key.value)}
+                className={classes.image}
+              />
+            </div>
           ))}
-      </Carousel>
+      </MCarousel>
     );
   } else {
     return (
@@ -279,7 +318,7 @@ function DisplayImages(props: { images: State<IFile[]> }) {
               ? imageUrl(state[0].get().identityId, state[0].get().key)
               : ""
           }
-          style={imgStyle}
+          className={classes.image}
         />
       </div>
     );
@@ -292,10 +331,10 @@ function PillNav(props: {
   buildLogDisabled: boolean;
 }) {
   let { url } = useRouteMatch();
-  const location = useLocation();
   const gState = useHookstate(globalState);
   const project = useHookstate(props.project);
   const history = useHistory();
+  const classes = useStyles();
 
   async function handleLike(projectId: number) {
     // Check if the user is signed in, if not then send them to the sign-in page.
@@ -355,66 +394,50 @@ function PillNav(props: {
   }
 
   return (
-    <Nav
-      variant="pills"
-      activeKey={defaultCategory(url, location.pathname)}
-      className="p-3"
-    >
-      <Nav.Item>
-        <Nav.Link
-          eventKey={`${url}/description`}
-          as={Link}
-          to={`${url}/description`}
-          replace
-        >
-          Description
-        </Nav.Link>
-      </Nav.Item>
-      <Nav.Item>
-        <Nav.Link
-          eventKey={`${url}/comments`}
-          as={Link}
-          to={`${url}/comments`}
-          replace
-        >
-          Comments
-        </Nav.Link>
-      </Nav.Item>
-      <Nav.Item>
-        <Nav.Link
-          eventKey={`${url}/files`}
-          as={Link}
-          to={`${url}/files`}
-          replace
-          disabled={props.filesDisabled}
-        >
-          files
-        </Nav.Link>
-      </Nav.Item>
-      <Nav.Item>
-        <Nav.Link
-          eventKey={`${url}/build-log`}
-          as={Link}
-          to={`${url}/build-log`}
-          replace
-          disabled={props.buildLogDisabled}
-        >
-          Build Log
-        </Nav.Link>
-      </Nav.Item>
-      <Nav.Item>
-        <Nav.Link onClick={() => handleLike(project.id.value)}>
-          <i className="fas fa-thumbs-up"></i>{" "}
-          {project.liked.value ? "Liked" : "Like"}
-        </Nav.Link>
-      </Nav.Item>
-      <Nav.Item>
-        <Nav.Link onClick={() => handleCollect(project.id.value)}>
-          <i className="fas fa-archive"></i>{" "}
-          {project.collected.value ? "Collected" : "Collect"}
-        </Nav.Link>
-      </Nav.Item>
-    </Nav>
+    <div className={classes.centerPageNav}>
+      <MButton
+        color="primary"
+        component={NavLink}
+        to={`${url}/description`}
+        activeClassName={classes.active}
+      >
+        Description
+      </MButton>
+      <MButton
+        color="primary"
+        component={NavLink}
+        to={`${url}/comments`}
+        replace
+      >
+        Comments
+      </MButton>
+      <MButton
+        color="primary"
+        component={NavLink}
+        to={`${url}/files`}
+        replace
+        disabled={props.filesDisabled}
+      >
+        Files
+      </MButton>
+      <MButton
+        color="primary"
+        component={NavLink}
+        to={`${url}/build-log`}
+        replace
+        disabled={props.buildLogDisabled}
+      >
+        Build Steps
+      </MButton>
+      <MButton color="primary" onClick={() => handleLike(project.id.value)}>
+        <ThumbUpIcon className={classes.pageNavIcon} />{" "}
+        {project.liked.value ? "Liked" : "Like"}
+      </MButton>
+      <MButton color="primary" onClick={() => handleCollect(project.id.value)}>
+        <CollectionsIcon className={classes.pageNavIcon} />{" "}
+        {project.collected.value ? "Collected" : "Collect"}
+      </MButton>
+    </div>
   );
 }
 
@@ -506,10 +529,10 @@ function ImageCard(props: { buildStep: State<IBuildStep> }) {
         return <CommentCard buildStepId={buildStep.id.value} />;
 
       case "img-files":
-        return <ImageCardFiles files={props.buildStep.files.get()} />;
+        return <ImageCardFiles files={props.buildStep.files.value} />;
 
       default:
-        return <Description text={props.buildStep.description.get()} />;
+        return <Description text={props.buildStep.description.value} />;
     }
   }
 

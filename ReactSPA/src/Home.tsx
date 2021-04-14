@@ -1,13 +1,6 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useHookstate, State } from "@hookstate/core";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Card from "react-bootstrap/Card";
-import Button from "react-bootstrap/Button";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import { Link, useHistory } from "react-router-dom";
-import avatar from "./images/empty-avatar.png";
+import { useHistory, Link as RouterLink } from "react-router-dom";
 import {
   getProjects,
   likeProject,
@@ -16,11 +9,59 @@ import {
   uncollectProject,
 } from "./agent";
 import { IHomeProject } from "./types";
-import { Storage } from "aws-amplify";
 import { globalState } from "./globalState";
+import Card from "@material-ui/core/Card";
+import CardHeader from "@material-ui/core/CardHeader";
+import CardActions from "@material-ui/core/CardActions";
+import CardMedia from "@material-ui/core/CardMedia";
+import Avatar from "@material-ui/core/Avatar";
+import IconButton from "@material-ui/core/IconButton";
+import Grid from "@material-ui/core/Grid";
+import { makeStyles } from "@material-ui/core/styles";
+import Container from "@material-ui/core/Container";
+import { red, green } from "@material-ui/core/colors";
+import ShareIcon from "@material-ui/icons/Share";
+import ThumbUpIcon from "@material-ui/icons/ThumbUp";
+import CollectionsIcon from "@material-ui/icons/Collections";
+import Typography from "@material-ui/core/Typography";
+import Link from "@material-ui/core/Link";
+import Box from "@material-ui/core/Box";
 
-function Home() {
+const useStyles = makeStyles((theme) => ({
+  icon: {
+    marginRight: theme.spacing(2),
+  },
+  iconActive: {
+    color: green[500],
+  },
+  cardGrid: {
+    paddingTop: theme.spacing(8),
+    paddingBottom: theme.spacing(8),
+    minHeight: "100%",
+  },
+  card: {
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+  },
+  cardMedia: {
+    paddingTop: "56.25%", // 16:9
+  },
+  cardTitle: {
+    maxWidth: "210px",
+  },
+  cardContent: {
+    flexGrow: 1,
+  },
+  avatar: {
+    backgroundColor: red[500],
+  },
+}));
+
+export default function Home() {
   const projects = useHookstate<IHomeProject[]>([]);
+  const classes = useStyles();
+
   useEffect(() => {
     getProjects().then((response) => {
       if (response && response.status === 200) {
@@ -38,11 +79,10 @@ function Home() {
   }
 
   return (
-    // TODO: Map projectArr
-    <Container id="home_page_main_container" className="container-xxl py-5">
-      <Row>
-        <Col className="home_page_col">{projectList()}</Col>
-      </Row>
+    <Container className={classes.cardGrid} maxWidth="lg">
+      <Grid container spacing={3}>
+        {projectList()}
+      </Grid>
     </Container>
   );
 }
@@ -50,23 +90,8 @@ function Home() {
 function ProjectCard(props: { project: State<IHomeProject> }) {
   const project = useHookstate(props.project);
   const gState = useHookstate(globalState);
-  const avatarUrl = useHookstate("");
   const history = useHistory();
-
-  // Image style that keeps all the different size images inside the parent div.
-  // Need to make sure that the parent div is set to position relative.
-  const imgStyle = {
-    maxHeight: "100%",
-    maxWidth: "100%",
-    width: "auto",
-    height: "auto",
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    margin: "auto",
-  } as React.CSSProperties;
+  const classes = useStyles();
 
   async function handleLike(projectId: number) {
     // Check if the user is signed in, if not then send them to the sign-in page.
@@ -133,65 +158,64 @@ function ProjectCard(props: { project: State<IHomeProject> }) {
         project.image.key.value
       : "";
 
-  return (
-    <Card
-      className="m-2 d-inline-block"
-      style={{ width: "301px", height: "268px" }}
-    >
-      <div
-        className="bg-secondary"
-        style={{
-          width: "300px",
-          height: "169px",
-          position: "relative",
-        }}
-        onClick={() => history.push("/project/" + project.id.get())}
-      >
-        <img src={imageUrl} style={imgStyle} />
-      </div>
-      <div className="p-2">
-        <h6>
-          <a href="#" className="mr-1">
-            <img
-              className="card-avatar"
-              src={avatarUrl.value ? avatarUrl.value : avatar}
-            />
-          </a>
-          <Link
-            to={"/project/" + project.id.get()}
-            className="align-middle home-project-title"
-          >
-            {project.title.get()}
-          </Link>
-        </h6>
+  const avatarUrl =
+    "https://d1sam1rvgl833u.cloudfront.net/protected/" +
+    project.user.identityId.value +
+    "/user-avatar.png";
 
-        <ButtonGroup className="mt-3 home-btn-group">
-          <Button variant="outline-primary">
-            <i className="fas fa-share-alt mr-1" aria-hidden="true"></i>
-            Share
-          </Button>
-          <Button
-            variant={
-              project.collected.value ? "outline-success" : "outline-primary"
-            }
+  return (
+    <Grid item key={project.id.value} xs={12} sm={6} md={4} lg={3}>
+      <Card className={classes.card}>
+        <RouterLink to={"/project/" + project.id.value.toString()}>
+          <CardMedia
+            className={classes.cardMedia}
+            image={imageUrl}
+            title={project.title.value}
+          />
+        </RouterLink>
+        <CardHeader
+          avatar={
+            <Avatar
+              aria-label="recipe"
+              className={classes.avatar}
+              src={avatarUrl}
+              alt={project.user.username.value}
+            ></Avatar>
+          }
+          title={
+            <Link
+              component={RouterLink}
+              to={"/project/" + project.id.value.toString()}
+            >
+              <Typography className={classes.cardTitle} noWrap>
+                {project.title.value}
+              </Typography>
+            </Link>
+          }
+          subheader={project.user.username.value}
+        />
+        <CardActions disableSpacing>
+          <IconButton aria-label="share" title="Share">
+            <ShareIcon />
+          </IconButton>
+          <IconButton
+            aria-label="collect"
+            title="Collect"
             onClick={() => handleCollect(project.id.value)}
+            className={project.collected.value ? classes.iconActive : ""}
           >
-            <i className="fas fa-archive mr-1" aria-hidden="true"></i>
-            {project.collected.value ? "Collected" : "Collect"}
-          </Button>
-          <Button
-            variant={
-              project.liked.value ? "outline-success" : "outline-primary"
-            }
+            <CollectionsIcon />
+          </IconButton>
+          <IconButton
+            aria-label="like"
+            title="Like"
             onClick={() => handleLike(project.id.value)}
+            className={project.liked.value ? classes.iconActive : ""}
           >
-            <i className="fas fa-thumbs-up mr-1" aria-hidden="true"></i>
-            {project.liked.value ? "Liked" : "Like"}
-          </Button>
-        </ButtonGroup>
-      </div>
-    </Card>
+            <ThumbUpIcon />
+          </IconButton>
+        </CardActions>
+      </Card>
+    </Grid>
   );
 }
-
-export default Home;

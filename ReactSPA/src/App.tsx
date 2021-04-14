@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import TopNav from "./TopNav";
 import Home from "./Home";
 import Project from "./Project";
@@ -11,6 +11,7 @@ import TestPage from "./TestPage";
 import MyAccount from "./MyAccount";
 import { globalState, getAuthenticatedUser } from "./globalState";
 import { useHookstate } from "@hookstate/core";
+import SideNav from "./SideNav";
 import {
   BrowserRouter as Router,
   Switch,
@@ -31,7 +32,7 @@ function ProtectedRoute(props: {
   }
 }
 
-function App() {
+export default function App() {
   const gState = useHookstate(globalState);
 
   useEffect(() => {
@@ -42,9 +43,10 @@ function App() {
   if (!gState.isAuthenticating.get()) {
     return (
       <RecoilRoot>
+        <TopNav />
+        <SideNav />
         <Router>
-          <TopNav />
-          <main className="flex-shrink-0">
+          <main>
             <Switch>
               <Route exact path="/">
                 <Home />
@@ -109,5 +111,3 @@ function App() {
     );
   }
 }
-
-export default App;

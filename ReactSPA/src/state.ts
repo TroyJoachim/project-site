@@ -1,12 +1,4 @@
-import {
-  RecoilRoot,
-  atom,
-  atomFamily,
-  selector,
-  useRecoilState,
-  useRecoilValue,
-} from "recoil";
-
+import { atom, atomFamily } from "recoil";
 import {
   LoginState,
   ForgotPasswordState,
@@ -15,21 +7,28 @@ import {
 } from "./types";
 
 // Recoil State Atoms
+// IMPORTANT: unique ID (with respect to other atoms/selectors)
+
+export const sideMenuState = atom<boolean>({
+  key: "sideMenuState",
+  default: false,
+});
+
 export const authState = atom<LoginState>({
-  key: "authState", // unique ID (with respect to other atoms/selectors)
+  key: "authState",
   default: {
     user: null,
     username: null,
     cache: null,
-  }, // default value (aka initial value)
+  },
 });
 
 export const forgotPasswordState = atom<ForgotPasswordState>({
-  key: "authState", // unique ID (with respect to other atoms/selectors)
+  key: "authState",
   default: {
     sent: false,
     username: "",
-  }, // default value (aka initial value)
+  },
 });
 
 export const commentState = atomFamily({

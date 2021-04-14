@@ -13,7 +13,6 @@ import ImageUpload from "./ImageUpload";
 import TextEditor from "./TextEditor";
 import FileUpload from "./FileUpload";
 import UploadingProjectModal from "./UploadingProjectModal";
-import { PageSideNav, SideNavType } from "./PageSideNav";
 import {
   IBuildStep,
   IProject,
@@ -21,8 +20,9 @@ import {
   ICategory,
   IFile,
   IFakeFile,
+  SideNavType,
 } from "./types";
-import { createProject, getProjectCategories, getProject } from "./agent";
+import { editProject, getProjectCategories, getProject } from "./agent";
 import { Storage } from "aws-amplify";
 import { EditorState, convertFromRaw, RawDraftContentState } from "draft-js";
 
@@ -55,7 +55,7 @@ export default function EditProject(props: any) {
     collected: false,
   };
 
-  // Hookstate
+  // Setup state
   const project = useHookstate<IProject>(initProject);
   const showModal = useHookstate(false);
   const modalSuccess = useHookstate(false);
@@ -68,6 +68,7 @@ export default function EditProject(props: any) {
   const editorState = useHookstate(EditorState.createEmpty());
   const history = useHistory();
 
+  // Downgrade image state property because Hookstate can't handle the File type
   project.images.attach(Downgraded);
 
   useEffect(() => {
@@ -142,6 +143,9 @@ export default function EditProject(props: any) {
         console.log(response);
         if (response && response.status == 200) {
           project.set(response.data);
+
+          // TODO: Set the null uploadedFiles to an empty list
+          project.uploadedFiles.set([]);
         }
       })
       .then(async () => {
@@ -159,7 +163,9 @@ export default function EditProject(props: any) {
         editorState.set(newEditorState);
 
         // Create project files
-        const projectFiles = project.files.value.filter((f) => f.isImage === false);
+        const projectFiles = project.files.value.filter(
+          (f) => f.isImage === false
+        );
         const fileListRaw = await convertFiles(projectFiles);
         // Typescript typeguard to filter undefined
         const fileList = fileListRaw.filter(
@@ -172,15 +178,16 @@ export default function EditProject(props: any) {
 
         // Convert buildstep files to IFakeFile
         project.buildSteps.forEach(async (buildStep) => {
-          const buildStepFiles = buildStep.files.value.filter((f) => f.isImage === false);
+          const buildStepFiles = buildStep.files.value.filter(
+            (f) => f.isImage === false
+          );
           const fileListRaw = await convertFiles(buildStepFiles);
           // Typescript typeguard to filter undefined
           const fileList = fileListRaw.filter(
             (f: IFakeFile | undefined): f is IFakeFile => !!f
           );
           buildStep.fakeFiles.set(fileList);
-        })
-        
+        });
       })
       .catch((error) => console.log(error));
   }, []); // Note: Empty array at the end ensures that this is only performed once during mount
@@ -230,6 +237,7 @@ export default function EditProject(props: any) {
     }
 
     // Check for a project description
+    console.log(descHasText.value);
     if (!descHasText.get()) {
       formValidationErrors.set(true);
       console.log("Missing desciption");
@@ -259,9 +267,9 @@ export default function EditProject(props: any) {
       project.attach(Downgraded);
 
       // Submit form
-      createProject(project.get()).then((response: any) => {
+      editProject(project.get()).then((response: any) => {
+        console.log(response);
         if (response && response.status === 201) {
-          console.log(response.status);
           modalSuccess.set(true);
           modalRoute.set("/project/" + response.data.id);
         } else {
@@ -302,10 +310,6 @@ export default function EditProject(props: any) {
   return (
     <Container fluid className="container-xxl">
       <Row>
-        <PageSideNav
-          buildSteps={project.buildSteps}
-          sideNavType={SideNavType.EditProject}
-        />
         <Col lg={8}>
           <Row className="mb-3">
             <Col>
@@ -448,15 +452,17 @@ function BuildStep(props: {
   const editorState = useHookstate(EditorState.createEmpty());
 
   useEffect(() => {
-    // Decode the project description
-    const jsonDescription: RawDraftContentState = JSON.parse(
-      atob(buildStep.description.value)
-    );
-    // Convert the raw json into an editorState
-    const newEditorState = EditorState.createWithContent(
-      convertFromRaw(jsonDescription)
-    );
-    editorState.set(newEditorState);
+    if (buildStep.description.value !== "") {
+      // Decode the project description
+      const jsonDescription: RawDraftContentState = JSON.parse(
+        atob(buildStep.description.value)
+      );
+      // Convert the raw json into an editorState
+      const newEditorState = EditorState.createWithContent(
+        convertFromRaw(jsonDescription)
+      );
+      editorState.set(newEditorState);
+    }
   }, []);
 
   // TODO: this will need to confirm deletion if there is any information in the buildstep
