@@ -16,6 +16,30 @@ import UploadingProjectModal from "./UploadingProjectModal";
 import { EditorState } from "draft-js";
 import { IBuildStep, IProject, IUser, ICategory, SideNavType } from "./types";
 import { createProject, getProjectCategories } from "./agent";
+import SideNav from "./SideNav";
+import { makeStyles } from "@material-ui/core/styles";
+
+// Page styles
+const useStyles = makeStyles((theme) => ({
+  content: {
+    flexGrow: 1,
+    [theme.breakpoints.up("md")]: {
+      transition: theme.transitions.create("margin", {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+      }),
+      marginLeft: 240,
+    },
+    [theme.breakpoints.down("sm")]: {
+      transition: theme.transitions.create("margin", {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      marginLeft: 0,
+    },
+  },
+}));
+
 
 function CreateProject() {
   const initUser: IUser = {
@@ -58,6 +82,7 @@ function CreateProject() {
   const modalRoute = useHookstate("");
   const editorState = useHookstate(EditorState.createEmpty());
   const history = useHistory();
+  const classes = useStyles();
 
   project.images.attach(Downgraded);
 
@@ -184,109 +209,112 @@ function CreateProject() {
   }
 
   return (
-    <Container fluid className="container-xxl">
-      <Row>
-        <Col lg={8}>
-          <Row className="mb-3">
-            <Col>
-              <h3 className="mt-3 d-inline-block">Create Project</h3>
-            </Col>
-            <Col>
-              <ButtonGroup
-                aria-label="Basic example"
-                className="mt-3 float-right"
-              >
-                <Button variant="danger">Cancel</Button>
-                <Button variant="primary">Preview</Button>
-                <Button variant="success" type="submit" form="main-form">
-                  Publish
-                </Button>
-              </ButtonGroup>
-            </Col>
-          </Row>
-          <UploadingProjectModal
-            show={showModal.get()}
-            onHide={handleOnHide}
-            successful={modalSuccess.get()}
-          />
-          {validated.get() && formValidationErrors.get() ? (
-            <Alert variant="danger">Please fix the form errors below.</Alert>
-          ) : (
-            <></>
-          )}
+    <div className={classes.content}>
+      <SideNav />
+      <Container fluid className="container-xxl">
+        <Row>
+          <Col lg={8}>
+            <Row className="mb-3">
+              <Col>
+                <h3 className="mt-3 d-inline-block">Create Project</h3>
+              </Col>
+              <Col>
+                <ButtonGroup
+                  aria-label="Basic example"
+                  className="mt-3 float-right"
+                >
+                  <Button variant="danger">Cancel</Button>
+                  <Button variant="primary">Preview</Button>
+                  <Button variant="success" type="submit" form="main-form">
+                    Publish
+                  </Button>
+                </ButtonGroup>
+              </Col>
+            </Row>
+            <UploadingProjectModal
+              show={showModal.get()}
+              onHide={handleOnHide}
+              successful={modalSuccess.get()}
+            />
+            {validated.get() && formValidationErrors.get() ? (
+              <Alert variant="danger">Please fix the form errors below.</Alert>
+            ) : (
+              <></>
+            )}
 
-          <Card id="#main_card">
-            <Card.Body>
-              <Form
-                id="main-form"
-                noValidate
-                validated={validated.get()}
-                onSubmit={handleSubmit}
-              >
-                <Form.Group controlId="formProjectTitle">
-                  <Form.Label>Project Title</Form.Label>
-                  <Form.Control
-                    onChange={(e) => project.title.set(e.target.value)}
-                    required
-                    type="text"
-                    placeholder="Enter a project title here"
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    Please enter a project title.
-                  </Form.Control.Feedback>
-                </Form.Group>
-
-                <Form.Group controlId="formProjectCategory">
-                  <Form.Label>Project Category</Form.Label>
-                  <Form.Control
-                    as="select"
-                    required
-                    onChange={handleDropdownSelect}
-                    defaultValue=""
-                  >
-                    <option disabled value="">
-                      -- select an option --
-                    </option>
-                    {buildCategoryDropdown()}
-                  </Form.Control>
-                  <Form.Control.Feedback type="invalid">
-                    Please select a project category.
-                  </Form.Control.Feedback>
-                </Form.Group>
-
-                <ImageUpload
-                  images={project.uploadedImages}
+            <Card id="#main_card">
+              <Card.Body>
+                <Form
+                  id="main-form"
+                  noValidate
                   validated={validated.get()}
-                />
-                <div className="mt-3">
-                  <TextEditor
-                    description={project.description}
-                    editorState={editorState}
-                    hasText={(result) => descHasText.set(result)}
+                  onSubmit={handleSubmit}
+                >
+                  <Form.Group controlId="formProjectTitle">
+                    <Form.Label>Project Title</Form.Label>
+                    <Form.Control
+                      onChange={(e) => project.title.set(e.target.value)}
+                      required
+                      type="text"
+                      placeholder="Enter a project title here"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      Please enter a project title.
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group controlId="formProjectCategory">
+                    <Form.Label>Project Category</Form.Label>
+                    <Form.Control
+                      as="select"
+                      required
+                      onChange={handleDropdownSelect}
+                      defaultValue=""
+                    >
+                      <option disabled value="">
+                        -- select an option --
+                      </option>
+                      {buildCategoryDropdown()}
+                    </Form.Control>
+                    <Form.Control.Feedback type="invalid">
+                      Please select a project category.
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <ImageUpload
+                    images={project.uploadedImages}
                     validated={validated.get()}
                   />
-                </div>
-                <FileUpload
-                  files={project.uploadedFiles}
-                  fakeFiles={project.fakeFiles}
-                />
-              </Form>
-            </Card.Body>
-          </Card>
-          <BuildSteps
-            buildSteps={project.buildSteps}
-            validated={validated.get()}
-          />
-          <Button
-            variant="outline-primary"
-            className="float-right my-3"
-            onClick={addBuildStepClick}
-          >
-            + Add Build Step
-          </Button>
-        </Col>
-      </Row>
-    </Container>
+                  <div className="mt-3">
+                    <TextEditor
+                      description={project.description}
+                      editorState={editorState}
+                      hasText={(result) => descHasText.set(result)}
+                      validated={validated.get()}
+                    />
+                  </div>
+                  <FileUpload
+                    files={project.uploadedFiles}
+                    fakeFiles={project.fakeFiles}
+                  />
+                </Form>
+              </Card.Body>
+            </Card>
+            <BuildSteps
+              buildSteps={project.buildSteps}
+              validated={validated.get()}
+            />
+            <Button
+              variant="outline-primary"
+              className="float-right my-3"
+              onClick={addBuildStepClick}
+            >
+              + Add Build Step
+            </Button>
+          </Col>
+        </Row>
+      </Container>
+    </div>
   );
 }
 

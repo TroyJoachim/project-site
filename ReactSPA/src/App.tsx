@@ -11,7 +11,6 @@ import TestPage from "./TestPage";
 import MyAccount from "./MyAccount";
 import { globalState, getAuthenticatedUser } from "./globalState";
 import { useHookstate } from "@hookstate/core";
-import SideNav from "./SideNav";
 import {
   BrowserRouter as Router,
   Switch,
@@ -19,6 +18,14 @@ import {
   Redirect,
 } from "react-router-dom";
 import { RecoilRoot } from "recoil";
+import CssBaseline from "@material-ui/core/CssBaseline";
+import { makeStyles } from "@material-ui/core/styles";
+
+const useStyles = makeStyles((theme) => ({
+  main: {
+    marginTop: "64px",
+  },
+}));
 
 function ProtectedRoute(props: {
   path: string;
@@ -34,6 +41,7 @@ function ProtectedRoute(props: {
 
 export default function App() {
   const gState = useHookstate(globalState);
+  const classes = useStyles();
 
   useEffect(() => {
     getAuthenticatedUser();
@@ -43,10 +51,10 @@ export default function App() {
   if (!gState.isAuthenticating.get()) {
     return (
       <RecoilRoot>
-        <TopNav />
-        <SideNav />
         <Router>
-          <main>
+          <CssBaseline />
+          <TopNav />
+          <main className={classes.main}>
             <Switch>
               <Route exact path="/">
                 <Home />

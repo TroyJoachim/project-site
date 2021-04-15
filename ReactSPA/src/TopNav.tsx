@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useHookstate } from "@hookstate/core";
-import { Link } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 import { getProjectCategories } from "./agent";
 import { ICategory } from "./types";
 import { globalState, signOut } from "./globalState";
@@ -30,11 +30,17 @@ import { sideMenuState } from "./state";
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
+    appBar: {
+      zIndex: theme.zIndex.drawer + 1,
+    },
     grow: {
       flexGrow: 1,
     },
     menuButton: {
       marginRight: theme.spacing(2),
+      [theme.breakpoints.up("md")]: {
+        display: "none",
+      },
     },
     title: {
       display: "none",
@@ -182,6 +188,7 @@ export default function TopNav() {
     setMobileMoreAnchorEl,
   ] = useState<null | HTMLElement>(null);
   const [drawerState, setDrawerState] = useRecoilState(sideMenuState);
+  const history = useHistory();
 
   useEffect(() => {
     // getProjectCategories().then((response) => {
@@ -274,7 +281,7 @@ export default function TopNav() {
 
   return (
     <>
-      <AppBar position="static">
+      <AppBar position="fixed" className={classes.appBar}>
         <Toolbar>
           <IconButton
             edge="start"
@@ -285,7 +292,14 @@ export default function TopNav() {
           >
             <MenuIcon />
           </IconButton>
-          <Typography className={classes.title} variant="h6" noWrap>
+          <Typography
+            className={classes.title}
+            variant="h6"
+            noWrap
+            onClick={() => {
+              history.push("/");
+            }}
+          >
             Material-UI
           </Typography>
           <div className={classes.search}>

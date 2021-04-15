@@ -44,11 +44,10 @@ import { default as MButton } from "@material-ui/core/Button";
 import ThumbUpIcon from "@material-ui/icons/ThumbUp";
 import CollectionsIcon from "@material-ui/icons/Collections";
 import Divider from "@material-ui/core/Divider";
+import SideNav from "./SideNav";
 
+// Page styles
 const useStyles = makeStyles((theme) => ({
-  wrapper: {
-    marginTop: "20px",
-  },
   image: {
     maxHeight: "100%",
     maxWidth: "100%",
@@ -75,6 +74,24 @@ const useStyles = makeStyles((theme) => ({
   },
   divider: {
     margin: "10px 0",
+  },
+  content: {
+    flexGrow: 1,
+    marginTop: "20px",
+    [theme.breakpoints.up("md")]: {
+      transition: theme.transitions.create("margin", {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+      }),
+      marginLeft: 240,
+    },
+    [theme.breakpoints.down("sm")]: {
+      transition: theme.transitions.create("margin", {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      marginLeft: 0,
+    },
   },
 }));
 
@@ -159,7 +176,8 @@ function MainContentArea(props: { project: State<IProject> }) {
   };
 
   return (
-    <div className={classes.wrapper}>
+    <div className={classes.content}>
+      <SideNav />
       <MContainer maxWidth="md">
         <Typography variant="h5">{project.title.value}</Typography>
         <Typography variant="subtitle1">

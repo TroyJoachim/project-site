@@ -4,8 +4,15 @@ import { useHookstate, State } from "@hookstate/core";
 import { Link, useRouteMatch, useLocation } from "react-router-dom";
 import { IBuildStep, SideNavType } from "./types";
 
-import { makeStyles } from "@material-ui/core/styles";
+import {
+  makeStyles,
+  Theme,
+  useTheme,
+  createStyles,
+} from "@material-ui/core/styles";
 import SwipeableDrawer from "@material-ui/core/SwipeableDrawer";
+import Drawer from "@material-ui/core/Drawer";
+import Hidden from "@material-ui/core/Hidden";
 import List from "@material-ui/core/List";
 import Divider from "@material-ui/core/Divider";
 import ListItem from "@material-ui/core/ListItem";
@@ -181,11 +188,28 @@ import { sideMenuState } from "./state";
 //   );
 // }
 
-const useStyles = makeStyles({
-  list: {
-    width: 250,
-  },
-});
+const drawerWidth = 240;
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    list: {
+      width: 250,
+    },
+    drawer: {
+      [theme.breakpoints.up("sm")]: {
+        width: drawerWidth,
+        flexShrink: 0,
+      },
+    },
+    drawerPaper: {
+      width: drawerWidth,
+      top: "64px",
+      [theme.breakpoints.down("xs")]: {
+        top: "56px",
+      },
+    },
+  })
+);
 
 export default function SideNav() {
   const classes = useStyles();
@@ -238,15 +262,34 @@ export default function SideNav() {
   );
 
   return (
-    <React.Fragment>
-      <SwipeableDrawer
-        anchor="left"
-        open={drawerState}
-        onClose={toggleDrawer()}
-        onOpen={toggleDrawer()}
-      >
-        {list()}
-      </SwipeableDrawer>
-    </React.Fragment>
+    <>
+      <Hidden smDown>
+        <Drawer
+          elevation={4}
+          anchor="left"
+          variant="permanent"
+          classes={{
+            paper: classes.drawerPaper,
+          }}
+        >
+          {list()}
+        </Drawer>
+      </Hidden>
+      <Hidden mdUp>
+        <SwipeableDrawer
+          variant="temporary"
+          className={classes.drawer}
+          anchor="left"
+          open={drawerState}
+          onClose={toggleDrawer()}
+          onOpen={toggleDrawer()}
+          classes={{
+            paper: classes.drawerPaper,
+          }}
+        >
+          {list()}
+        </SwipeableDrawer>
+      </Hidden>
+    </>
   );
 }
