@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Collapse from "react-bootstrap/Collapse";
@@ -25,8 +25,9 @@ import TextField from "@material-ui/core/TextField";
 import { default as MButton } from "@material-ui/core/Button";
 import Link from "@material-ui/core/Link";
 import Avatar from "@material-ui/core/Avatar";
-import { Grid, Typography } from "@material-ui/core";
-import classes from "*.module.css";
+import Typography from "@material-ui/core/Typography";
+import { default as MCollapse } from "@material-ui/core/Collapse";
+import Box from "@material-ui/core/Box";
 
 // Styles
 const useStyles = makeStyles((theme: Theme) =>
@@ -45,6 +46,7 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     commentWrapper: {
       display: "flex",
+      marginTop: "10px",
     },
     commentRightColumn: {
       marginLeft: "10px",
@@ -59,8 +61,20 @@ const useStyles = makeStyles((theme: Theme) =>
       fontWeight: 500,
       marginRight: "5px",
     },
-    commentButtons: {
-      marginLeft: "-10px",
+    collapse: {
+      width: "100%",
+    },
+    childComments: {
+      paddingLeft: "10px",
+    },
+    link: {
+      marginRight: "15px",
+    },
+    commentLinkGroup: {
+      margin: "5px 0 10px 0",
+    },
+    childCommentLinkGroup: {
+      marginTop: "5px",
     },
   })
 );
@@ -162,6 +176,7 @@ function AddChildComment(props: {
   const text = useHookstate("");
   const loading = useHookstate(false);
   const toggleReply = useHookstate(props.toggleReply);
+  const classes = useStyles();
 
   function handleEnterText(elem: React.ChangeEvent<HTMLTextAreaElement>) {
     text.set(elem.target.value);
@@ -191,33 +206,41 @@ function AddChildComment(props: {
   }
 
   return (
-    <Form className="pt-2" onSubmit={handleOnSubmit}>
-      <Form.Control
-        as="textarea"
+    <form
+      className={classes.root}
+      noValidate
+      autoComplete="off"
+      onSubmit={handleOnSubmit}
+    >
+      <TextField
+        id="standard-multiline-flexible"
+        label="Add Comment"
+        multiline
+        rowsMax={4}
         value={text.value}
-        rows={3}
         onChange={handleEnterText}
-        required
       />
-      <div className="float-right mt-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          className="mr-2"
+      <div className={classes.addCommentBtns}>
+        <MButton
+          variant="contained"
+          size="small"
+          className={classes.addCommentCancel}
           onClick={handleCancel}
+          disabled={loading.value}
         >
           Cancel
-        </Button>
-        <Button
-          variant="primary"
-          size="sm"
+        </MButton>
+        <MButton
+          variant="contained"
+          size="small"
+          color="primary"
           type="submit"
           disabled={loading.value}
         >
           Reply
-        </Button>
+        </MButton>
       </div>
-    </Form>
+    </form>
   );
 }
 
@@ -314,6 +337,7 @@ function DeleteComment(props: {
   }
   const [comments, setComments] = useRecoilState(commentState(id));
   const toggleDelete = useHookstate(props.toggleDelete);
+  const classes = useStyles();
 
   async function handleDelete() {
     const response = await deleteComment(props.id);
@@ -331,19 +355,24 @@ function DeleteComment(props: {
   }
 
   return (
-    <Form className="mt-2">
+    <Form>
       <p>Delete this comment?</p>
-      <Button
-        variant="secondary"
-        size="sm"
-        className="mr-2"
+      <MButton
+        variant="contained"
+        size="small"
+        className={classes.addCommentCancel}
         onClick={handleCancel}
       >
         Cancel
-      </Button>
-      <Button variant="danger" size="sm" onClick={handleDelete}>
+      </MButton>
+      <MButton
+        variant="contained"
+        size="small"
+        color="secondary"
+        onClick={handleDelete}
+      >
         Delete
-      </Button>
+      </MButton>
     </Form>
   );
 }
@@ -358,6 +387,7 @@ function DeleteChildComment(props: {
     childCommentState(props.parentId)
   );
   const toggleDelete = useHookstate(props.toggleDelete);
+  const classes = useStyles();
 
   async function handleDelete() {
     const response = await deleteChildComment(props.id);
@@ -375,19 +405,24 @@ function DeleteChildComment(props: {
   }
 
   return (
-    <Form className="mt-2">
+    <Form>
       <p>Delete this comment?</p>
-      <Button
-        variant="secondary"
-        size="sm"
-        className="mr-2"
+      <MButton
+        variant="contained"
+        size="small"
+        className={classes.addCommentCancel}
         onClick={handleCancel}
       >
         Cancel
-      </Button>
-      <Button variant="danger" size="sm" onClick={handleDelete}>
+      </MButton>
+      <MButton
+        variant="contained"
+        size="small"
+        color="secondary"
+        onClick={handleDelete}
+      >
         Delete
-      </Button>
+      </MButton>
     </Form>
   );
 }
@@ -571,100 +606,90 @@ function Comment(props: {
               </div>
             </form>
           ) : (
-            <Typography variant="body1">{editText.value}</Typography>
+            <Typography variant="body1">{props.comment.text}</Typography>
           )}
 
-          <div className={classes.commentButtons}>
+          <div className={classes.commentLinkGroup}>
             {props.comment.childCount > 0 ? (
-              <MButton
-                color="primary"
-                size="small"
-                onClick={handleToggleChildren}
-              >
+              <Link className={classes.link} onClick={handleToggleChildren}>
                 {"View " + props.comment.childCount.toString() + " replies"}
-              </MButton>
+              </Link>
             ) : (
               <></>
             )}
 
             {gState.isAuthenticated.value ? (
-              <MButton color="primary" size="small" onClick={handleToggleReply}>
+              <Link className={classes.link} onClick={handleToggleReply}>
                 Reply
-              </MButton>
+              </Link>
             ) : (
               <></>
             )}
 
             {isThem() ? (
-              <MButton color="primary" size="small" onClick={handleEdit}>
+              <Link className={classes.link} onClick={handleEdit}>
                 Edit
-              </MButton>
+              </Link>
             ) : (
               <></>
             )}
 
             {isThem() ? (
-              <MButton
-                color="primary"
-                size="small"
-                onClick={handleToggleDelete}
-              >
+              <Link className={classes.link} onClick={handleToggleDelete}>
                 Delete
-              </MButton>
+              </Link>
             ) : (
               <></>
             )}
           </div>
 
-          <div className="d-flex flex-row">
-            <Collapse in={toggleDelete.value} className="w-100">
-              <div>
-                <DeleteComment
-                  id={props.comment.id}
+          <div style={{ display: "flex" }}>
+            <MCollapse
+              in={toggleDelete.value}
+              classes={{ container: classes.collapse }}
+            >
+              <DeleteComment
+                id={props.comment.id}
+                projectId={props.projectId}
+                buildStepId={props.buildStepId}
+                toggleDelete={toggleDelete}
+                commentDeleted={handleCommentDeleted}
+              />
+            </MCollapse>
+          </div>
+          <div style={{ display: "flex", width: "100%" }}>
+            <MCollapse
+              in={toggleReply.value}
+              classes={{ container: classes.collapse }}
+            >
+              <AddChildComment
+                parentId={props.comment.id}
+                toggleReply={toggleReply}
+                childCommentCreated={handleChildCommentCreated}
+              />
+            </MCollapse>
+          </div>
+          <Box
+            style={{ display: "flex", width: "100%" }}
+            borderLeft={1}
+            borderColor="primary.main"
+            className={classes.childComments}
+          >
+            <MCollapse
+              in={toggleChildren.value}
+              classes={{ container: classes.collapse }}
+            >
+              {loadChildren.value ? (
+                <ChildComments
+                  parentId={props.comment.id}
                   projectId={props.projectId}
                   buildStepId={props.buildStepId}
-                  toggleDelete={toggleDelete}
-                  commentDeleted={handleCommentDeleted}
                 />
-              </div>
-            </Collapse>
-          </div>
-          {/* <div className="d-flex flex-row">
-              <Collapse in={toggleReport.value} className="w-100">
-                <div>
-                  <ReportComment
-                    commentId={props.comment.id}
-                    toggleReport={toggleReport}
-                  />
-                </div>
-              </Collapse>
-            </div> */}
-          <div className="d-flex flex-row">
-            <Collapse in={toggleReply.value} className="w-100">
-              <div className="flex-fill">
-                <AddChildComment
-                  parentId={props.comment.id}
-                  toggleReply={toggleReply}
-                  childCommentCreated={handleChildCommentCreated}
-                />
-              </div>
-            </Collapse>
-          </div>
-          <div className="d-flex flex-row border-left border-success pl-2">
-            <Collapse in={toggleChildren.value} className="w-100">
-              <div>
-                {loadChildren.value ? (
-                  <ChildComments
-                    parentId={props.comment.id}
-                    projectId={props.projectId}
-                    buildStepId={props.buildStepId}
-                  />
-                ) : (
-                  <></>
-                )}
-              </div>
-            </Collapse>
-          </div>
+              ) : (
+                <></>
+              )}
+            </MCollapse>
+          </Box>
         </div>
       </div>
     </>
@@ -738,6 +763,7 @@ function ChildComment(props: {
   const editText = useHookstate(props.childComment.text);
   const isLoading = useHookstate(false);
   const gState = useHookstate(globalState);
+  const classes = useStyles();
 
   function handleToggleReply() {
     toggleReply.set(!toggleReply.value);
@@ -823,153 +849,117 @@ function ChildComment(props: {
   const isThem = () =>
     gState.identityId.value === props.childComment.user.identityId;
 
-  const imageUrl =
+  const avatarUrl =
     "https://d1sam1rvgl833u.cloudfront.net/fit-in/40x40/protected/" +
     props.childComment.user.identityId +
     "/user-avatar.png";
 
   return (
     <>
-      <div className="comment d-flex flex-row mt-3">
-        <img
-          className="public-avatar-img mr-2 d-flex flex-shrink-0 flex-column"
-          src={imageUrl}
-        />
-        <div className="comment-body flex-grow-1 flex-column">
-          <div className="d-flex flex-row">
-            <a href="#">
-              <h6 className="d-flex justify-content-start mr-2 d-inline">
+      <div className={classes.commentWrapper}>
+        <Avatar alt={props.childComment.user.username} src={avatarUrl} />
+        <div className={classes.commentRightColumn}>
+          <div className={classes.commentFrom}>
+            <Link>
+              <span className={classes.commentFromUser}>
                 {props.childComment.user.username}
-              </h6>
-            </a>
+              </span>
+            </Link>
             <span className="font-weight-light" style={{ fontSize: ".8rem" }}>
               {localizeDateTime(props.childComment.editedAt)}
             </span>
           </div>
 
-          <div className="d-flex flex-row">
-            {editingMode.value ? (
-              <Form className="mb-2 pt-2 w-100" onSubmit={handleOnSubmitEdit}>
-                <Form.Control
-                  as="textarea"
-                  value={editText.value}
-                  rows={3}
-                  onChange={handleEnterEditText}
-                  required
-                />
-                <div className="mt-1 float-right">
-                  <Button
-                    variant="secondary"
-                    className="mr-2 btn-xs"
-                    onClick={handleCancelEdit}
-                    disabled={isLoading.value}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="primary"
-                    type="submit"
-                    className="btn-xs"
-                    disabled={isLoading.value}
-                  >
-                    Update
-                  </Button>
-                </div>
-              </Form>
+          {editingMode.value ? (
+            <form
+              className={classes.root}
+              noValidate
+              autoComplete="off"
+              onSubmit={handleOnSubmitEdit}
+            >
+              <TextField
+                id="standard-multiline-flexible"
+                label="Edit Comment"
+                multiline
+                rowsMax={4}
+                value={editText.value}
+                onChange={handleEnterEditText}
+              />
+              <div className={classes.addCommentBtns}>
+                <MButton
+                  variant="contained"
+                  size="small"
+                  className={classes.addCommentCancel}
+                  onClick={handleCancelEdit}
+                  disabled={isLoading.value}
+                >
+                  Cancel
+                </MButton>
+                <MButton
+                  variant="contained"
+                  size="small"
+                  color="primary"
+                  type="submit"
+                  disabled={isLoading.value}
+                >
+                  Update
+                </MButton>
+              </div>
+            </form>
+          ) : (
+            <Typography variant="body1">{editText.value}</Typography>
+          )}
+
+          <div className={classes.childCommentLinkGroup}>
+            {gState.isAuthenticated.value ? (
+              <Link className={classes.link} onClick={handleToggleReply}>
+                Reply
+              </Link>
             ) : (
-              <>
-                {props.childComment.inReplyTo ? (
-                  <RouterLink to="/foobar" className="mr-2">
-                    @{props.childComment.inReplyTo.username}
-                  </RouterLink>
-                ) : (
-                  <></>
-                )}
-                <p className="mb-1">{props.childComment.text}</p>
-              </>
+              <></>
+            )}
+
+            {isThem() ? (
+              <Link className={classes.link} onClick={handleEdit}>
+                Edit
+              </Link>
+            ) : (
+              <></>
+            )}
+
+            {isThem() ? (
+              <Link className={classes.link} onClick={handleToggleDelete}>
+                Delete
+              </Link>
+            ) : (
+              <></>
             )}
           </div>
-          <div
-            className="d-flex flex-column comment-children"
-            style={{ marginLeft: "-40px" }}
-          >
-            <div className="d-flex flex-row">
-              {gState.isAuthenticated.value ? (
-                <button
-                  className="btn btn-link btn-link-sm"
-                  type="button"
-                  onClick={handleToggleReply}
-                >
-                  Reply
-                </button>
-              ) : (
-                <></>
-              )}
-              {/* <button
-                className="btn btn-link btn-link-sm"
-                type="button"
-                onClick={handleToggleReport}
-              >
-                Report
-              </button> */}
 
-              {isThem() ? (
-                <button
-                  className="btn btn-link btn-link-sm"
-                  type="button"
-                  onClick={handleEdit}
-                >
-                  Edit
-                </button>
-              ) : (
-                <></>
-              )}
-              {isThem() ? (
-                <button
-                  className="btn btn-link btn-link-sm"
-                  type="button"
-                  onClick={handleToggleDelete}
-                >
-                  Delete
-                </button>
-              ) : (
-                <></>
-              )}
-            </div>
-            <div className="d-flex flex-row">
-              <Collapse in={toggleDelete.value} className="w-100">
-                <div>
-                  <DeleteChildComment
-                    id={props.childComment.id}
-                    parentId={props.parentId}
-                    toggleDelete={toggleDelete}
-                    commentDeleted={handleCommentDeleted}
-                  />
-                </div>
-              </Collapse>
-            </div>
-            {/* <div className="d-flex flex-row">
-              <Collapse in={toggleReport.value} className="w-100">
-                <div>
-                  <ReportChildComment
-                    childCommentId={props.childComment.id}
-                    toggleReport={toggleReport}
-                  />
-                </div>
-              </Collapse>
-            </div> */}
-            <div className="d-flex flex-row">
-              <Collapse in={toggleReply.value} className="w-100">
-                <div className="flex-fill">
-                  <AddChildComment
-                    parentId={props.parentId}
-                    inReplyTo={props.childComment.user.identityId}
-                    toggleReply={toggleReply}
-                    childCommentCreated={handleChildCommentCreated}
-                  />
-                </div>
-              </Collapse>
-            </div>
+          <div style={{ display: "flex" }}>
+            <MCollapse
+              in={toggleDelete.value}
+              classes={{ container: classes.collapse }}
+            >
+              <DeleteChildComment
+                id={props.childComment.id}
+                parentId={props.parentId}
+                toggleDelete={toggleDelete}
+                commentDeleted={handleCommentDeleted}
+              />
+            </MCollapse>
+          </div>
+          <div style={{ display: "flex", width: "100%" }}>
+            <MCollapse
+              in={toggleReply.value}
+              classes={{ container: classes.collapse }}
+            >
+              <AddChildComment
+                parentId={props.childComment.id}
+                toggleReply={toggleReply}
+                childCommentCreated={handleChildCommentCreated}
+              />
+            </MCollapse>
           </div>
         </div>
       </div>
@@ -1028,6 +1018,8 @@ export default function CommentCard(props: {
   function handleAddComment() {
     toggleAddComment.set(false);
   }
+
+  console.log(comments);
 
   return (
     <>
