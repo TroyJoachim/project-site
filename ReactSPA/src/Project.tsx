@@ -1,13 +1,20 @@
 import { useEffect } from "react";
 import { useHookstate, State } from "@hookstate/core";
 import { globalState } from "./globalState";
-import Button from "react-bootstrap/Button";
-import Card from "react-bootstrap/Card";
-import Table from "react-bootstrap/Table";
-import Nav from "react-bootstrap/Nav";
 import draftToHtml from "draftjs-to-html";
-import CommentCard from "./CommentCard";
 import ReactHtmlParser from "react-html-parser";
+import { localizeDateTime, downloadBlob, humanFileSize } from "./helpers";
+import { Storage } from "aws-amplify";
+import {
+  Link as RouterLink,
+  NavLink,
+  Switch,
+  Route,
+  useRouteMatch,
+  useHistory,
+} from "react-router-dom";
+import CommentCard from "./CommentCard";
+import SideNav from "./SideNav";
 import {
   IFile,
   IProject,
@@ -16,16 +23,6 @@ import {
   IComment,
   SideNavType,
 } from "./types";
-import { localizeDateTime, downloadBlob, humanFileSize } from "./helpers";
-import { Storage } from "aws-amplify";
-import {
-  Link,
-  NavLink,
-  Switch,
-  Route,
-  useRouteMatch,
-  useHistory,
-} from "react-router-dom";
 import {
   getProject,
   likeProject,
@@ -34,20 +31,46 @@ import {
   uncollectProject,
 } from "./agent";
 
-import { default as MContainer } from "@material-ui/core/Container";
+// Material UI
+import { makeStyles, withStyles } from "@material-ui/core/styles";
+import { green } from "@material-ui/core/colors";
+import Avatar from "@material-ui/core/Avatar";
+import Grid from "@material-ui/core/Grid";
+import Container from "@material-ui/core/Container";
 import Typography from "@material-ui/core/Typography";
 import Paper from "@material-ui/core/Paper";
-import { default as MLink } from "@material-ui/core/Link";
-import { makeStyles } from "@material-ui/core/styles";
-import { default as MCarousel } from "react-material-ui-carousel";
-import { default as MButton } from "@material-ui/core/Button";
+import Link from "@material-ui/core/Link";
+import Carousel from "react-material-ui-carousel";
+import Button from "@material-ui/core/Button";
+import Tabs from "@material-ui/core/Tabs";
+import Tab from "@material-ui/core/Tab";
 import ThumbUpIcon from "@material-ui/icons/ThumbUp";
 import CollectionsIcon from "@material-ui/icons/Collections";
 import Divider from "@material-ui/core/Divider";
-import SideNav from "./SideNav";
+import Table from "@material-ui/core/Table";
+import TableBody from "@material-ui/core/TableBody";
+import TableCell from "@material-ui/core/TableCell";
+import TableContainer from "@material-ui/core/TableContainer";
+import TableHead from "@material-ui/core/TableHead";
+import TableRow from "@material-ui/core/TableRow";
+import GetAppIcon from "@material-ui/icons/GetApp";
+import Box from "@material-ui/core/Box";
 
 // Page styles
 const useStyles = makeStyles((theme) => ({
+  titleWrapper: {
+    marginBottom: "10px",
+  },
+  titleText: {
+    display: "flex",
+  },
+  titleRightColumn: {
+    marginLeft: "10px",
+    width: "100%",
+  },
+  editProjectBtn: {
+    float: "right",
+  },
   image: {
     maxHeight: "100%",
     maxWidth: "100%",
@@ -78,6 +101,7 @@ const useStyles = makeStyles((theme) => ({
   content: {
     flexGrow: 1,
     marginTop: "20px",
+    marginBottom: "20px",
     [theme.breakpoints.up("md")]: {
       transition: theme.transitions.create("margin", {
         easing: theme.transitions.easing.sharp,
@@ -93,7 +117,28 @@ const useStyles = makeStyles((theme) => ({
       marginLeft: 0,
     },
   },
+  downloadBtn: {
+    float: "right",
+  },
+  thDownload: {
+    textAlign: "right",
+  },
+  buildStepTabs: {
+    flexGrow: 1,
+    width: "100%",
+    backgroundColor: theme.palette.background.paper,
+  },
+  iconActive: {
+    color: green[500],
+  },
 }));
+
+function a11yProps(index: any) {
+  return {
+    id: `simple-tab-${index}`,
+    "aria-controls": `simple-tabpanel-${index}`,
+  };
+}
 
 // If the URL doesn't have the category, then default it to the description category
 function defaultCategory(url: any, pathname: string) {
@@ -106,7 +151,7 @@ function defaultCategory(url: any, pathname: string) {
   }
 }
 
-function Project(props: any) {
+export default function Project(props: any) {
   const initUser: IUser = {
     username: "",
     identityId: "",
@@ -153,6 +198,9 @@ function Project(props: any) {
 function MainContentArea(props: { project: State<IProject> }) {
   let { path } = useRouteMatch();
   const project = useHookstate(props.project);
+  const category = useHookstate(0);
+  const gState = useHookstate(globalState);
+  const history = useHistory();
   const classes = useStyles();
 
   // Checks if there are any files and if they are files and not images.
@@ -174,185 +222,6 @@ function MainContentArea(props: { project: State<IProject> }) {
     }
     return false;
   };
-
-  return (
-    <div className={classes.content}>
-      <SideNav />
-      <MContainer maxWidth="md">
-        <Typography variant="h5">{project.title.value}</Typography>
-        <Typography variant="subtitle1">
-          Created by: <MLink>{project.user.username.value}</MLink> on{" "}
-          {localizeDateTime(project.createdAt.value)}
-        </Typography>
-        <DisplayImages images={project.files} />
-        <PillNav
-          project={project}
-          filesDisabled={filesDisabled()}
-          buildLogDisabled={buildLogDisabled()}
-        />
-        <Switch>
-          <Route exact path={path}>
-            <Paper className={classes.paper}>
-              <Typography variant="h5">Description</Typography>
-              <Divider className={classes.divider} />
-              <Description text={project.description.value} />
-            </Paper>
-          </Route>
-          <Route path={`${path}/description`}>
-            <Paper className={classes.paper}>
-              <Typography variant="h5">Description</Typography>
-              <Divider className={classes.divider} />
-              <Description text={project.description.value} />
-            </Paper>
-          </Route>
-          <Route path={`${path}/comments`}>
-            <Paper className={classes.paper}>
-              <Typography variant="h5">Description</Typography>
-              <Divider className={classes.divider} />
-              <CommentCard projectId={project.id.value} />
-            </Paper>
-          </Route>
-          <Route path={`${path}/files`}>
-            <Card>
-              <Card.Body>
-                <h3 className="border-bottom pb-2">Project Files</h3>
-                <FileList files={props.project.files.value} />
-              </Card.Body>
-            </Card>
-          </Route>
-          <Route path={`${path}/build-log`}>
-            {props.project.buildSteps.value ? (
-              props.project.buildSteps.map((bs, index) => (
-                <ImageCard key={index} buildStep={bs} />
-              ))
-            ) : (
-              <></>
-            )}
-          </Route>
-        </Switch>
-      </MContainer>
-    </div>
-
-    // <Container fluid className="container-xxl">
-    //   <Row>
-    //     <Col lg={8} className="ms-lg-auto px-md-4">
-    //       <div className="pt-3 pb-2 mb-3">
-    //         <h4>{props.project.title.get()}</h4>
-    //         <div>
-    //           Created By: <a href="#">Troy Joachim</a> on{" "}
-    //           {localizeDateTime(props.project.createdAt.get())}
-    //           <Button
-    //             variant="primary"
-    //             size="sm"
-    //             className="float-right"
-    //             as={Link}
-    //             to={"/edit-project/" + props.project.id.get()}
-    //           >
-    //             Edit
-    //           </Button>
-    //         </div>
-    //       </div>
-
-    //       <Card>
-    //         <DisplayImages images={props.project.files} />
-    //       </Card>
-
-    //       <PillNav
-    //         project={project}
-    //         filesDisabled={filesDisabled()}
-    //         buildLogDisabled={buildLogDisabled()}
-    //       />
-
-    //     </Col>
-    //   </Row>
-    // </Container>
-  );
-}
-
-function DisplayImages(props: { images: State<IFile[]> }) {
-  const state = useHookstate(props.images);
-  const classes = useStyles();
-
-  // const loadingStyle = {
-  //   margin: 0,
-  //   position: "absolute",
-  //   top: "50%",
-  //   left: "45%",
-  //   msTransform: "translateY(-50%)",
-  //   transform: "translateY(-50%)",
-  //   color: "#fff",
-  // } as React.CSSProperties;
-
-  const imageUrl = (identityId: string, key: string) =>
-    "https://d1sam1rvgl833u.cloudfront.net/fit-in/0x400/protected/" +
-    identityId +
-    "/" +
-    key;
-
-  // if (isLoading.value) {
-  //   return (
-  //     <div
-  //       className="bg-secondary"
-  //       style={{ height: "400px", position: "relative" }}
-  //     >
-  //       <div style={loadingStyle}>
-  //         <Spinner className="m-1" animation="grow" />
-  //         <Spinner className="m-1" animation="grow" />
-  //         <Spinner className="m-1" animation="grow" />
-  //       </div>
-  //     </div>
-  //   );
-  // }
-  if (state.value && state.value.length > 1) {
-    return (
-      <MCarousel interval={10000}>
-        {state
-          .filter((file) => file.isImage.value === true)
-          .map((file) => (
-            <div
-              className="bg-secondary"
-              style={{
-                height: "400px",
-                position: "relative",
-              }}
-            >
-              <img
-                src={imageUrl(file.identityId.value, file.key.value)}
-                className={classes.image}
-              />
-            </div>
-          ))}
-      </MCarousel>
-    );
-  } else {
-    return (
-      <div
-        className="bg-secondary"
-        style={{ height: "400px", position: "relative" }}
-      >
-        <img
-          src={
-            state.length > 0
-              ? imageUrl(state[0].get().identityId, state[0].get().key)
-              : ""
-          }
-          className={classes.image}
-        />
-      </div>
-    );
-  }
-}
-
-function PillNav(props: {
-  project: State<IProject>;
-  filesDisabled: boolean;
-  buildLogDisabled: boolean;
-}) {
-  let { url } = useRouteMatch();
-  const gState = useHookstate(globalState);
-  const project = useHookstate(props.project);
-  const history = useHistory();
-  const classes = useStyles();
 
   async function handleLike(projectId: number) {
     // Check if the user is signed in, if not then send them to the sign-in page.
@@ -411,50 +280,218 @@ function PillNav(props: {
     }
   }
 
+  const images = project.files.value.filter((f) => f.isImage);
+  const avatarUrl =
+    "https://d1sam1rvgl833u.cloudfront.net/fit-in/40x40/protected/" +
+    props.project.user.identityId.value +
+    "/user-avatar.png";
+
+  return (
+    <div className={classes.content}>
+      <SideNav />
+      <Container maxWidth="md">
+        <Grid container className={classes.titleWrapper}>
+          <Grid item sm={7}>
+            <div className={classes.titleText}>
+              <Link component={RouterLink} to="/">
+                <Avatar alt={project.user.username.value} src={avatarUrl} />
+              </Link>
+              <div className={classes.titleRightColumn}>
+                <Typography variant="h5">{project.title.value}</Typography>
+                <Typography variant="subtitle1">
+                  Created by:{" "}
+                  <Link component={RouterLink} to="/">
+                    {project.user.username.value}
+                  </Link>{" "}
+                  on {localizeDateTime(project.createdAt.value)}
+                </Typography>
+              </div>
+            </div>
+          </Grid>
+          <Grid item sm={5}></Grid>
+        </Grid>
+        <div>
+          <Button
+            color="primary"
+            className={project.liked.value ? classes.iconActive : ""}
+            onClick={() => handleLike(project.id.value)}
+          >
+            <ThumbUpIcon className={classes.pageNavIcon} />{" "}
+            {project.liked.value ? "Liked" : "Like"}
+          </Button>
+          <Button
+            color="primary"
+            className={project.collected.value ? classes.iconActive : ""}
+            onClick={() => handleCollect(project.id.value)}
+          >
+            <CollectionsIcon className={classes.pageNavIcon} />{" "}
+            {project.collected.value ? "Collected" : "Collect"}
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            className={classes.editProjectBtn}
+          >
+            Edit
+          </Button>
+        </div>
+
+        <DisplayImages images={images} />
+
+        <PillNav
+          category={category}
+          project={project}
+          filesDisabled={filesDisabled()}
+          buildLogDisabled={buildLogDisabled()}
+        />
+
+        <TabPanel value={category.value} index={0} p={0}>
+          <Paper className={classes.paper}>
+            <Typography variant="h5">Description</Typography>
+            <Divider className={classes.divider} />
+            <Description text={project.description.value} />
+          </Paper>
+        </TabPanel>
+        <TabPanel value={category.value} index={1} p={0}>
+          <Paper className={classes.paper}>
+            <Typography variant="h5">Comments</Typography>
+            <Divider className={classes.divider} />
+            <CommentCard projectId={project.id.value} />
+          </Paper>
+        </TabPanel>
+        <TabPanel value={category.value} index={2} p={0}>
+          <Paper className={classes.paper}>
+            <Typography variant="h5">Project Files</Typography>
+            <Divider className={classes.divider} />
+            <FileList files={props.project.files.value} />
+          </Paper>
+        </TabPanel>
+        <TabPanel value={category.value} index={3} p={0}>
+          {props.project.buildSteps.value ? (
+            props.project.buildSteps.map((bs, index) => (
+              <ImageCard key={index} buildStep={bs} />
+            ))
+          ) : (
+            <></>
+          )}
+        </TabPanel>
+      </Container>
+    </div>
+  );
+}
+
+function DisplayImages(props: { images: IFile[] }) {
+  const classes = useStyles();
+  const images = props.images;
+
+  // const loadingStyle = {
+  //   margin: 0,
+  //   position: "absolute",
+  //   top: "50%",
+  //   left: "45%",
+  //   msTransform: "translateY(-50%)",
+  //   transform: "translateY(-50%)",
+  //   color: "#fff",
+  // } as React.CSSProperties;
+
+  // if (isLoading.value) {
+  //   return (
+  //     <div
+  //       className="bg-secondary"
+  //       style={{ height: "400px", position: "relative" }}
+  //     >
+  //       <div style={loadingStyle}>
+  //         <Spinner className="m-1" animation="grow" />
+  //         <Spinner className="m-1" animation="grow" />
+  //         <Spinner className="m-1" animation="grow" />
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
+  const imageUrl = (identityId: string, key: string) =>
+    "https://d1sam1rvgl833u.cloudfront.net/fit-in/0x400/protected/" +
+    identityId +
+    "/" +
+    key;
+
+  if (images && images.length > 1) {
+    return (
+      <Carousel interval={10000}>
+        {images
+          .filter((file) => file.isImage === true)
+          .map((file) => (
+            <div
+              className="bg-secondary"
+              style={{
+                height: "400px",
+                position: "relative",
+              }}
+            >
+              <img
+                src={imageUrl(file.identityId, file.key)}
+                className={classes.image}
+              />
+            </div>
+          ))}
+      </Carousel>
+    );
+  } else {
+    return (
+      <div
+        className="bg-secondary"
+        style={{ height: "400px", position: "relative" }}
+      >
+        <img
+          src={
+            images.length > 0
+              ? imageUrl(images[0].identityId, images[0].key)
+              : ""
+          }
+          className={classes.image}
+        />
+      </div>
+    );
+  }
+}
+
+function PillNav(props: {
+  category: State<number>;
+  project: State<IProject>;
+  filesDisabled: boolean;
+  buildLogDisabled: boolean;
+}) {
+  const project = useHookstate(props.project);
+  const category = useHookstate(props.category);
+  const history = useHistory();
+  const classes = useStyles();
+
+  const handleChange = (event: React.ChangeEvent<{}>, newValue: number) => {
+    category.set(newValue);
+  };
+
   return (
     <div className={classes.centerPageNav}>
-      <MButton
-        color="primary"
-        component={NavLink}
-        to={`${url}/description`}
-        activeClassName={classes.active}
+      <Tabs
+        value={category.value}
+        onChange={handleChange}
+        className={classes.centerPageNav}
+        indicatorColor="primary"
+        textColor="primary"
+        variant="scrollable"
+        scrollButtons="auto"
+        aria-label="Select build step category"
       >
-        Description
-      </MButton>
-      <MButton
-        color="primary"
-        component={NavLink}
-        to={`${url}/comments`}
-        replace
-      >
-        Comments
-      </MButton>
-      <MButton
-        color="primary"
-        component={NavLink}
-        to={`${url}/files`}
-        replace
-        disabled={props.filesDisabled}
-      >
-        Files
-      </MButton>
-      <MButton
-        color="primary"
-        component={NavLink}
-        to={`${url}/build-log`}
-        replace
-        disabled={props.buildLogDisabled}
-      >
-        Build Steps
-      </MButton>
-      <MButton color="primary" onClick={() => handleLike(project.id.value)}>
-        <ThumbUpIcon className={classes.pageNavIcon} />{" "}
-        {project.liked.value ? "Liked" : "Like"}
-      </MButton>
-      <MButton color="primary" onClick={() => handleCollect(project.id.value)}>
-        <CollectionsIcon className={classes.pageNavIcon} />{" "}
-        {project.collected.value ? "Collected" : "Collect"}
-      </MButton>
+        <Tab label="Description" {...a11yProps(0)} />
+        <Tab label="Comments" {...a11yProps(1)} />
+        <Tab label="Files" {...a11yProps(2)} disabled={props.filesDisabled} />
+        <Tab
+          label="Build Log"
+          {...a11yProps(3)}
+          disabled={props.buildLogDisabled}
+        />
+      </Tabs>
     </div>
   );
 }
@@ -473,6 +510,7 @@ function Description(props: { text: string }) {
 }
 
 function FileList(props: { files: IFile[] }) {
+  const classes = useStyles();
   // Hides the table if there are no files
   const tableHidden = props.files.length > 0 ? "" : "d-none";
 
@@ -498,100 +536,111 @@ function FileList(props: { files: IFile[] }) {
     const tableRow = props.files
       .filter((file) => file.isImage === false)
       .map((file: IFile, i) => (
-        <tr key={i}>
-          <td>{file.fileName}</td>
-          <td>{humanFileSize(file.size)}</td>
-          <td>
+        <TableRow key={i}>
+          <TableCell>{file.fileName}</TableCell>
+          <TableCell>{humanFileSize(file.size)}</TableCell>
+          <TableCell>
             <Button
-              variant="success"
-              size="sm"
-              className="float-right"
+              variant="contained"
+              color="primary"
+              size="small"
+              className={classes.downloadBtn}
               onClick={() =>
                 downloadFile(file.key, file.identityId, file.fileName)
               }
             >
-              <i className="fas fa-download"></i>
+              <GetAppIcon />
             </Button>
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       ));
     return tableRow;
   }
 
   return (
-    <div className="mt-4">
-      <Table responsive hover size="sm" className={tableHidden}>
-        <thead className="thead-light">
-          <tr>
-            <th>File Name</th>
-            <th>Size</th>
-            <th className="text-right">Download</th>
-          </tr>
-        </thead>
-        <tbody>{fileList()}</tbody>
+    <TableContainer>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>File Name</TableCell>
+            <TableCell>Size</TableCell>
+            <TableCell className={classes.thDownload}>Download</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>{fileList()}</TableBody>
       </Table>
-      <Button variant="primary" className={"float-right " + tableHidden}>
-        <i className="fas fa-download mr-1"></i>Download all
-      </Button>
+    </TableContainer>
+  );
+}
+
+function TabPanel(props: {
+  children?: React.ReactNode;
+  index: any;
+  value: any;
+  p: number;
+}) {
+  const { children, value, index, p, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box p={p}>
+          <Typography>{children}</Typography>
+        </Box>
+      )}
     </div>
   );
 }
 
 function ImageCard(props: { buildStep: State<IBuildStep> }) {
-  const category = useHookstate("img-desc");
+  const category = useHookstate(0);
   const buildStep = useHookstate(props.buildStep);
+  const classes = useStyles();
 
-  function imageCardCategory() {
-    switch (category.get()) {
-      case "img-comments":
-        return <CommentCard buildStepId={buildStep.id.value} />;
+  const handleChange = (event: React.ChangeEvent<{}>, newValue: number) => {
+    category.set(newValue);
+  };
 
-      case "img-files":
-        return <ImageCardFiles files={props.buildStep.files.value} />;
-
-      default:
-        return <Description text={props.buildStep.description.value} />;
-    }
-  }
+  const images = props.buildStep.files.value.filter((i) => i.isImage);
 
   return (
-    <Card className="mb-5">
-      <DisplayImages images={props.buildStep.files} />
-      <Card.Body>
-        <Nav variant="tabs" className="my-2" defaultActiveKey="img-desc">
-          <Nav.Item>
-            <Nav.Link
-              eventKey="img-desc"
-              onClick={() => category.set("img-desc")}
-            >
-              Description
-            </Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link
-              eventKey="img-comments"
-              onClick={() => category.set("img-comments")}
-            >
-              Comments
-            </Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link
-              eventKey="img-files"
-              onClick={() => category.set("img-files")}
-            >
-              Files
-            </Nav.Link>
-          </Nav.Item>
-        </Nav>
-        {imageCardCategory()}
-      </Card.Body>
-    </Card>
+    <div className={classes.buildStepTabs}>
+      <Paper>
+        <DisplayImages images={images} />
+        <Tabs
+          value={category.value}
+          onChange={handleChange}
+          indicatorColor="primary"
+          textColor="primary"
+          variant="scrollable"
+          scrollButtons="auto"
+          aria-label="Select build step category"
+        >
+          <Tab label="Description" {...a11yProps(0)} />
+          <Tab label="Comments" {...a11yProps(1)} />
+          <Tab label="Files" {...a11yProps(2)} />
+        </Tabs>
+
+        <TabPanel value={category.value} index={0} p={3}>
+          <Description text={props.buildStep.description.value} />
+        </TabPanel>
+        <TabPanel value={category.value} index={1} p={3}>
+          <CommentCard buildStepId={buildStep.id.value} />
+        </TabPanel>
+        <TabPanel value={category.value} index={2} p={3}>
+          <ImageCardFiles files={props.buildStep.files.value} />
+        </TabPanel>
+      </Paper>
+    </div>
   );
 }
 
 function ImageCardFiles(props: { files: IFile[] }) {
   return <FileList files={props.files} />;
 }
-
-export default Project;

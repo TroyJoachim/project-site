@@ -25,7 +25,6 @@ import ThumbUpIcon from "@material-ui/icons/ThumbUp";
 import CollectionsIcon from "@material-ui/icons/Collections";
 import Typography from "@material-ui/core/Typography";
 import Link from "@material-ui/core/Link";
-import Box from "@material-ui/core/Box";
 
 const useStyles = makeStyles((theme) => ({
   icon: {

@@ -1019,8 +1019,6 @@ export default function CommentCard(props: {
     toggleAddComment.set(false);
   }
 
-  console.log(comments);
-
   return (
     <>
       {gState.isAuthenticated.value ? (
