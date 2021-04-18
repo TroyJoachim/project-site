@@ -5,6 +5,8 @@ import draftToHtml from "draftjs-to-html";
 import ReactHtmlParser from "react-html-parser";
 import { localizeDateTime, downloadBlob, humanFileSize } from "./helpers";
 import { Storage } from "aws-amplify";
+import { useRecoilState } from "recoil";
+import { sideMenuCategoryState } from "./state";
 import {
   Link as RouterLink,
   NavLink,
@@ -15,14 +17,7 @@ import {
 } from "react-router-dom";
 import CommentCard from "./CommentCard";
 import SideNav from "./SideNav";
-import {
-  IFile,
-  IProject,
-  IBuildStep,
-  IUser,
-  IComment,
-  SideNavType,
-} from "./types";
+import { IFile, IProject, IBuildStep, IUser, SideNavCategory } from "./types";
 import {
   getProject,
   likeProject,
@@ -34,6 +29,9 @@ import {
 // Material UI
 import { makeStyles, withStyles } from "@material-ui/core/styles";
 import { green } from "@material-ui/core/colors";
+import ThumbUpIcon from "@material-ui/icons/ThumbUp";
+import CollectionsIcon from "@material-ui/icons/Collections";
+import ShareIcon from "@material-ui/icons/Share";
 import Avatar from "@material-ui/core/Avatar";
 import Grid from "@material-ui/core/Grid";
 import Container from "@material-ui/core/Container";
@@ -44,8 +42,6 @@ import Carousel from "react-material-ui-carousel";
 import Button from "@material-ui/core/Button";
 import Tabs from "@material-ui/core/Tabs";
 import Tab from "@material-ui/core/Tab";
-import ThumbUpIcon from "@material-ui/icons/ThumbUp";
-import CollectionsIcon from "@material-ui/icons/Collections";
 import Divider from "@material-ui/core/Divider";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
@@ -196,9 +192,10 @@ export default function Project(props: any) {
 }
 
 function MainContentArea(props: { project: State<IProject> }) {
-  let { path } = useRouteMatch();
   const project = useHookstate(props.project);
-  const category = useHookstate(0);
+  const [sideNavCategory, setSideNavCategory] = useRecoilState(
+    sideMenuCategoryState
+  );
   const gState = useHookstate(globalState);
   const history = useHistory();
   const classes = useStyles();
@@ -288,7 +285,7 @@ function MainContentArea(props: { project: State<IProject> }) {
 
   return (
     <div className={classes.content}>
-      <SideNav />
+      <SideNav project={project} />
       <Container maxWidth="md">
         <Grid container className={classes.titleWrapper}>
           <Grid item sm={7}>
@@ -328,6 +325,14 @@ function MainContentArea(props: { project: State<IProject> }) {
             {project.collected.value ? "Collected" : "Collect"}
           </Button>
           <Button
+            color="primary"
+            //className={project.collected.value ? classes.iconActive : ""}
+            //onClick={() => handleCollect(project.id.value)}
+          >
+            <ShareIcon className={classes.pageNavIcon} />
+            Share
+          </Button>
+          <Button
             variant="contained"
             color="primary"
             size="small"
@@ -340,34 +345,32 @@ function MainContentArea(props: { project: State<IProject> }) {
         <DisplayImages images={images} />
 
         <PillNav
-          category={category}
-          project={project}
           filesDisabled={filesDisabled()}
           buildLogDisabled={buildLogDisabled()}
         />
 
-        <TabPanel value={category.value} index={0} p={0}>
+        <TabPanel value={sideNavCategory.category} index={0} p={0}>
           <Paper className={classes.paper}>
             <Typography variant="h5">Description</Typography>
             <Divider className={classes.divider} />
             <Description text={project.description.value} />
           </Paper>
         </TabPanel>
-        <TabPanel value={category.value} index={1} p={0}>
+        <TabPanel value={sideNavCategory.category} index={1} p={0}>
           <Paper className={classes.paper}>
             <Typography variant="h5">Comments</Typography>
             <Divider className={classes.divider} />
             <CommentCard projectId={project.id.value} />
           </Paper>
         </TabPanel>
-        <TabPanel value={category.value} index={2} p={0}>
+        <TabPanel value={sideNavCategory.category} index={2} p={0}>
           <Paper className={classes.paper}>
             <Typography variant="h5">Project Files</Typography>
             <Divider className={classes.divider} />
             <FileList files={props.project.files.value} />
           </Paper>
         </TabPanel>
-        <TabPanel value={category.value} index={3} p={0}>
+        <TabPanel value={sideNavCategory.category} index={3} p={0}>
           {props.project.buildSteps.value ? (
             props.project.buildSteps.map((bs, index) => (
               <ImageCard key={index} buildStep={bs} />
@@ -456,25 +459,25 @@ function DisplayImages(props: { images: IFile[] }) {
   }
 }
 
-function PillNav(props: {
-  category: State<number>;
-  project: State<IProject>;
-  filesDisabled: boolean;
-  buildLogDisabled: boolean;
-}) {
-  const project = useHookstate(props.project);
-  const category = useHookstate(props.category);
-  const history = useHistory();
+function PillNav(props: { filesDisabled: boolean; buildLogDisabled: boolean }) {
+  const [sideNavCategory, setSideNavCategory] = useRecoilState(
+    sideMenuCategoryState
+  );
+  //const category = useHookstate(props.category);
   const classes = useStyles();
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: number) => {
-    category.set(newValue);
+    if (newValue === SideNavCategory.BuildLog) {
+      setSideNavCategory({ category: newValue, buildStep: 0 });
+    } else {
+      setSideNavCategory({ category: newValue, buildStep: -1 });
+    }
   };
 
   return (
     <div className={classes.centerPageNav}>
       <Tabs
-        value={category.value}
+        value={sideNavCategory.category}
         onChange={handleChange}
         className={classes.centerPageNav}
         indicatorColor="primary"

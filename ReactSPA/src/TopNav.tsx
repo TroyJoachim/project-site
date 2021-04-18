@@ -26,7 +26,7 @@ import MailIcon from "@material-ui/icons/Mail";
 import NotificationsIcon from "@material-ui/icons/Notifications";
 import MoreIcon from "@material-ui/icons/MoreVert";
 import { useRecoilState } from "recoil";
-import { sideMenuState } from "./state";
+import { sideMenuOpenState } from "./state";
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -187,7 +187,7 @@ export default function TopNav() {
     mobileMoreAnchorEl,
     setMobileMoreAnchorEl,
   ] = useState<null | HTMLElement>(null);
-  const [drawerState, setDrawerState] = useRecoilState(sideMenuState);
+  const [sideNavOpen, setSideNavOpen] = useRecoilState(sideMenuOpenState);
   const history = useHistory();
 
   useEffect(() => {
@@ -219,7 +219,7 @@ export default function TopNav() {
   };
 
   const toggleDrawer = () => {
-    setDrawerState(!drawerState);
+    setSideNavOpen(!sideNavOpen);
   };
 
   const menuId = "primary-search-account-menu";

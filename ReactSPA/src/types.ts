@@ -6,6 +6,13 @@ export enum SideNavType {
   EditProject,
 }
 
+export enum SideNavCategory {
+  Description,
+  Comments,
+  Files,
+  BuildLog,
+}
+
 export interface IHomeProject {
   id: number;
   title: string;

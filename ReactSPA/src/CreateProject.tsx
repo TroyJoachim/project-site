@@ -40,7 +40,6 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-
 function CreateProject() {
   const initUser: IUser = {
     username: "",
@@ -210,7 +209,7 @@ function CreateProject() {
 
   return (
     <div className={classes.content}>
-      <SideNav />
+      <SideNav project={project} />
       <Container fluid className="container-xxl">
         <Row>
           <Col lg={8}>

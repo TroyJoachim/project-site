@@ -2,14 +2,19 @@ import React from "react";
 
 import { useHookstate, State } from "@hookstate/core";
 import { Link, useRouteMatch, useLocation } from "react-router-dom";
-import { IBuildStep, SideNavType } from "./types";
-
+import { IBuildStep, SideNavCategory, IProject } from "./types";
+import { useRecoilState } from "recoil";
+import { sideMenuOpenState, sideMenuCategoryState } from "./state";
 import {
   makeStyles,
   Theme,
   useTheme,
   createStyles,
 } from "@material-ui/core/styles";
+import CommentIcon from "@material-ui/icons/Comment";
+import CloudDownloadIcon from "@material-ui/icons/CloudDownload";
+import FormatListNumberedIcon from "@material-ui/icons/FormatListNumbered";
+import DescriptionIcon from "@material-ui/icons/Description";
 import SwipeableDrawer from "@material-ui/core/SwipeableDrawer";
 import Drawer from "@material-ui/core/Drawer";
 import Hidden from "@material-ui/core/Hidden";
@@ -18,175 +23,6 @@ import Divider from "@material-ui/core/Divider";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
-import InboxIcon from "@material-ui/icons/MoveToInbox";
-import MailIcon from "@material-ui/icons/Mail";
-import { useRecoilState } from "recoil";
-import { sideMenuState } from "./state";
-
-// function PageSideNav(props: {
-//   buildSteps: State<IBuildStep[]>;
-//   sideNavType: SideNavType;
-// }) {
-//   const state = useHookstate(props.buildSteps);
-//   const menuOpen = useHookstate(false);
-//   const { url } = useRouteMatch();
-//   const location = useLocation();
-
-//   // Removes the dash if there is no description
-//   const name = (stepName: string, index: number) =>
-//     stepName !== "" ? stepName : "Step " + (index + 1).toString();
-
-//   const steps = state.map((step, index) => (
-//     <Nav.Link key={index} className="ml-4 border-left">
-//       Step {name(step.title.value, index)}
-//     </Nav.Link>
-//   ));
-
-//   const openBtnStyle = {
-//     position: "fixed",
-//     top: 6,
-//     zIndex: 10,
-//     borderRadius: "0 5px 5px 0",
-//     height: "45px",
-//   } as React.CSSProperties;
-
-//   const menuOpenStyle = {
-//     width: "250px",
-//     zIndex: 100,
-//   } as React.CSSProperties;
-
-//   const menuCloseStyle = {
-//     width: 0,
-//     zIndex: 100,
-//   } as React.CSSProperties;
-
-//   const closeBtn = {
-//     position: "absolute",
-//     top: 0,
-//     right: "10px",
-//     fontSize: "36px",
-//     marginLeft: "50px",
-//     color: "#e8e8e8",
-//     textDecoration: "none",
-//   } as React.CSSProperties;
-
-//   const pageMenuStyle = {
-//     display: "block",
-//   } as React.CSSProperties;
-
-//   function menuStyle() {
-//     return menuOpen.get() ? menuOpenStyle : menuCloseStyle;
-//   }
-
-//   // If the URL doesn't have the category, then default it to the description category
-//   function defaultCategory(url: any, pathname: string) {
-//     const categories = [
-//       "/main",
-//       "/description",
-//       "/comments",
-//       "/files",
-//       "/build-log",
-//     ];
-//     if (new RegExp(categories.join("|")).test(pathname)) {
-//       // At least one match
-//       return pathname;
-//     } else {
-//       if (props.sideNavType === SideNavType.Project) {
-//         return `${url}/description`;
-//       } else {
-//         return `${url}/main`;
-//       }
-//     }
-//   }
-
-//   function menuItems() {
-//     if (props.sideNavType === SideNavType.Project) {
-//       return (
-//         <>
-//           <Nav.Link
-//             eventKey={`${url}/description`}
-//             as={Link}
-//             to={`${url}/description`}
-//             replace
-//           >
-//             Description
-//           </Nav.Link>
-//           <Nav.Link
-//             eventKey={`${url}/comments`}
-//             as={Link}
-//             to={`${url}/comments`}
-//             replace
-//           >
-//             Comments
-//           </Nav.Link>
-//           <Nav.Link
-//             eventKey={`${url}/files`}
-//             as={Link}
-//             to={`${url}/files`}
-//             replace
-//           >
-//             Files
-//           </Nav.Link>
-//         </>
-//       );
-//     } else {
-//       return (
-//         <Nav.Link eventKey={`${url}/main`} as={Link} to={`${url}/main`} replace>
-//           Main
-//         </Nav.Link>
-//       );
-//     }
-//   }
-
-//   return (
-//     <>
-//       <Button
-//         id="page-menu-open-btn"
-//         variant="secondary"
-//         size="sm"
-//         style={openBtnStyle}
-//         onClick={() => menuOpen.set(!menuOpen.get())}
-//       >
-//         <i className="fas fa-chevron-right"></i>
-//       </Button>
-//       <Col
-//         md={3}
-//         lg={2}
-//         id="project-page-side-nav"
-//         className="sidebar d-lg-block"
-//         style={menuStyle()}
-//       >
-//         <button
-//           id="page-menu-close-btn"
-//           className="btn btn-link"
-//           style={closeBtn}
-//           type="button"
-//           onClick={() => menuOpen.set(!menuOpen.get())}
-//         >
-//           X
-//         </button>
-//         <div className="sticky-top pt-3">
-//           <Nav
-//             id="page-menu"
-//             style={pageMenuStyle}
-//             activeKey={defaultCategory(url, location.pathname)}
-//           >
-//             {menuItems()}
-//             <Nav.Link
-//               eventKey={`${url}/build-log`}
-//               as={Link}
-//               to={`${url}/build-log`}
-//               replace
-//             >
-//               Build Log
-//             </Nav.Link>
-//             {steps}
-//           </Nav>
-//         </div>
-//       </Col>
-//     </>
-//   );
-// }
 
 const drawerWidth = 240;
 
@@ -208,12 +44,19 @@ const useStyles = makeStyles((theme: Theme) =>
         top: "56px",
       },
     },
+    nested: {
+      paddingLeft: theme.spacing(3),
+    },
   })
 );
 
-export default function SideNav() {
+export default function SideNav(props: { project: State<IProject> }) {
+  const project = useHookstate(props.project);
   const classes = useStyles();
-  const [drawerState, setDrawerState] = useRecoilState(sideMenuState);
+  const [sideNavOpen, setSideNavOpen] = useRecoilState(sideMenuOpenState);
+  const [sideNavCategory, setSideNavCategory] = useRecoilState(
+    sideMenuCategoryState
+  );
 
   const toggleDrawer = () => (
     event: React.KeyboardEvent | React.MouseEvent
@@ -227,36 +70,91 @@ export default function SideNav() {
       return;
     }
 
-    setDrawerState(!drawerState);
+    setSideNavOpen(!sideNavOpen);
+  };
+
+  const handleBuildStepClick = () => {
+    setSideNavCategory({ category: SideNavCategory.BuildLog, buildStep: 0 });
+  };
+
+  const handleClick = (category: SideNavCategory) => {
+    setSideNavCategory({ category: category, buildStep: -1 });
+  };
+
+  const buildStepCategories = () => {
+    return project.buildSteps.map((bs, index) => (
+      <ListItem
+        button
+        className={classes.nested}
+        onClick={() => {
+          setSideNavCategory({
+            category: SideNavCategory.BuildLog,
+            buildStep: index,
+          });
+        }}
+        selected={sideNavCategory.buildStep === index}
+      >
+        <ListItemText
+          primary={
+            <>
+              <strong>Step {(index + 1).toString()}: </strong>
+              {bs.title.value}
+            </>
+          }
+        />
+      </ListItem>
+    ));
   };
 
   const list = () => (
-    <div
-      className={classes.list}
-      role="presentation"
-      onClick={toggleDrawer()}
-      onKeyDown={toggleDrawer()}
-    >
+    <div className={classes.list} role="presentation">
       <List>
-        {["Inbox", "Starred", "Send email", "Drafts"].map((text, index) => (
-          <ListItem button key={text}>
-            <ListItemIcon>
-              {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-            </ListItemIcon>
-            <ListItemText primary={text} />
-          </ListItem>
-        ))}
+        <ListItem
+          button
+          onClick={() => handleClick(SideNavCategory.Description)}
+          selected={sideNavCategory.category === SideNavCategory.Description}
+        >
+          <ListItemIcon>
+            <DescriptionIcon />
+          </ListItemIcon>
+          <ListItemText primary={"Description"} />
+        </ListItem>
+        <ListItem
+          button
+          onClick={() => handleClick(SideNavCategory.Comments)}
+          selected={sideNavCategory.category === SideNavCategory.Comments}
+        >
+          <ListItemIcon>
+            <CommentIcon />
+          </ListItemIcon>
+          <ListItemText primary={"Comments"} />
+        </ListItem>
+        <ListItem
+          button
+          onClick={() => handleClick(SideNavCategory.Files)}
+          selected={sideNavCategory.category === SideNavCategory.Files}
+        >
+          <ListItemIcon>
+            <CloudDownloadIcon />
+          </ListItemIcon>
+          <ListItemText primary={"Files"} />
+        </ListItem>
       </List>
       <Divider />
       <List>
-        {["All mail", "Trash", "Spam"].map((text, index) => (
-          <ListItem button key={text}>
-            <ListItemIcon>
-              {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-            </ListItemIcon>
-            <ListItemText primary={text} />
-          </ListItem>
-        ))}
+        <ListItem
+          button
+          onClick={handleBuildStepClick}
+          selected={sideNavCategory.category === SideNavCategory.BuildLog}
+        >
+          <ListItemIcon>
+            <FormatListNumberedIcon />
+          </ListItemIcon>
+          <ListItemText primary={"Build Log"} />
+        </ListItem>
+        <List component="div" disablePadding>
+          {buildStepCategories()}
+        </List>
       </List>
     </div>
   );
@@ -280,7 +178,7 @@ export default function SideNav() {
           variant="temporary"
           className={classes.drawer}
           anchor="left"
-          open={drawerState}
+          open={sideNavOpen}
           onClose={toggleDrawer()}
           onOpen={toggleDrawer()}
           classes={{
