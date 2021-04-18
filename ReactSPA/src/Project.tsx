@@ -613,7 +613,7 @@ function ImageCard(props: { buildStep: State<IBuildStep> }) {
   const images = props.buildStep.files.value.filter((i) => i.isImage);
 
   return (
-    <div className={classes.buildStepTabs}>
+    <div id={buildStep.id.value.toString()} className={classes.buildStepTabs}>
       <Paper>
         <DisplayImages images={images} />
         <Tabs

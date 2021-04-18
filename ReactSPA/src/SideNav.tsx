@@ -5,6 +5,7 @@ import { Link, useRouteMatch, useLocation } from "react-router-dom";
 import { IBuildStep, SideNavCategory, IProject } from "./types";
 import { useRecoilState } from "recoil";
 import { sideMenuOpenState, sideMenuCategoryState } from "./state";
+import { HashLink } from 'react-router-hash-link';
 import {
   makeStyles,
   Theme,
@@ -93,6 +94,8 @@ export default function SideNav(props: { project: State<IProject> }) {
           });
         }}
         selected={sideNavCategory.buildStep === index}
+        component={HashLink}
+        to={"#" + bs.id.value.toString()}
       >
         <ListItemText
           primary={
