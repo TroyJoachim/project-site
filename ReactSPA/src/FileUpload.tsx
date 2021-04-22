@@ -1,9 +1,26 @@
 import React from "react";
 import { useHookstate, State, none } from "@hookstate/core";
-import Button from "react-bootstrap/Button";
-import Table from "react-bootstrap/Table";
 import { humanFileSize } from "./helpers";
 import { IFakeFile } from "./types";
+
+import { makeStyles } from "@material-ui/core/styles";
+import Button from "@material-ui/core/Button";
+import Table from "@material-ui/core/Table";
+import TableBody from "@material-ui/core/TableBody";
+import TableCell from "@material-ui/core/TableCell";
+import TableContainer from "@material-ui/core/TableContainer";
+import TableHead from "@material-ui/core/TableHead";
+import TableRow from "@material-ui/core/TableRow";
+
+// Page styles
+const useStyles = makeStyles((theme) => ({
+  btnFloatRight: {
+    float: "right",
+  },
+  displayNone: {
+    display: "none",
+  }
+}));
 
 export default function FileUpload(props: {
   files: State<File[]>;
@@ -12,6 +29,7 @@ export default function FileUpload(props: {
   const files = useHookstate(props.files);
   const fakeFiles = useHookstate(props.fakeFiles);
   const inputField = React.useRef<HTMLInputElement>(null);
+  const classes = useStyles();
 
   const deleteButtonStyle = {
     padding: ".1rem .5rem",
@@ -47,23 +65,23 @@ export default function FileUpload(props: {
     }
   }
 
-  function fileListItem(index: number, file: any) {
+  function fileListItem(i: number, file: any) {
     return (
-      <tr key={index}>
-        <td>{file.name}</td>
-        <td>{humanFileSize(file.size)}</td>
-        <td>
+      <TableRow key={i}>
+        <TableCell>{file.name}</TableCell>
+        <TableCell>{humanFileSize(file.size)}</TableCell>
+        <TableCell>
           <Button
-            variant="danger"
-            size="sm"
-            className="float-right"
-            style={deleteButtonStyle}
+            variant="contained"
+            color="secondary"
+            size="small"
+            className={classes.btnFloatRight}
             onClick={() => handleFileDelete(file.name)}
           >
             X
           </Button>
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
     );
   }
 
@@ -86,31 +104,35 @@ export default function FileUpload(props: {
   }
 
   // Hides the table if there are no files
-  const tableHidden = files.length || fakeFiles.length > 0 ? "" : "d-none";
+  const tableHidden =
+    files.length || fakeFiles.length > 0 ? "" : classes.displayNone;
 
   return (
     <div className="mt-4">
       <div className="mb-3">
         <h5 className="d-inline-block mb-0">Project Files</h5>
         <Button
-          variant="primary"
-          size="sm"
-          className="float-right"
+          variant="contained"
+          color="primary"
+          size="small"
+          className={classes.btnFloatRight}
           onClick={showOpenFileDlg}
         >
           Upload Files
         </Button>
       </div>
-      <Table responsive hover size="sm" className={tableHidden}>
-        <thead className="thead-light">
-          <tr>
-            <th>File Name</th>
-            <th>Size</th>
-            <th className="text-right">Remove</th>
-          </tr>
-        </thead>
-        <tbody>{fakeFileList().concat(fileList())}</tbody>
-      </Table>
+      <TableContainer>
+        <Table size="small" className={tableHidden}>
+          <TableHead>
+            <TableRow>
+              <TableCell>File Name</TableCell>
+              <TableCell>Size</TableCell>
+              <TableCell className={classes.btnFloatRight}>Remove</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>{fakeFileList().concat(fileList())}</TableBody>
+        </Table>
+      </TableContainer>
       <input
         type="file"
         id="file"

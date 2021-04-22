@@ -2,13 +2,6 @@ import React, { useEffect } from "react";
 import { useHookstate, Downgraded, State, none } from "@hookstate/core";
 import { useHistory } from "react-router-dom";
 import Alert from "react-bootstrap/Alert";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import Button from "react-bootstrap/Button";
-import Card from "react-bootstrap/Card";
-import Form from "react-bootstrap/Form";
 import ImageUpload from "./ImageUpload";
 import TextEditor from "./TextEditor";
 import FileUpload from "./FileUpload";
@@ -17,11 +10,29 @@ import { EditorState } from "draft-js";
 import { IBuildStep, IProject, IUser, ICategory, SideNavType } from "./types";
 import { createProject, getProjectCategories } from "./agent";
 import SideNav from "./SideNav";
+
 import { makeStyles } from "@material-ui/core/styles";
+import Container from "@material-ui/core/Container";
+import Paper from "@material-ui/core/Paper";
+import Typography from "@material-ui/core/Typography";
+import ButtonGroup from "@material-ui/core/ButtonGroup";
+import { default as MButton } from "@material-ui/core/Button";
+import Box from "@material-ui/core/Box";
+import Grid from "@material-ui/core/Grid";
+import FormControl from "@material-ui/core/FormControl";
+import InputLabel from "@material-ui/core/InputLabel";
+import Input from "@material-ui/core/Input";
+import FormHelperText from "@material-ui/core/FormHelperText";
+import Select from "@material-ui/core/Select";
+import MenuItem from "@material-ui/core/MenuItem";
+import ListSubheader from "@material-ui/core/ListSubheader";
+import Button from "@material-ui/core/Button";
+import TextField from "@material-ui/core/TextField";
 
 // Page styles
 const useStyles = makeStyles((theme) => ({
   content: {
+    marginTop: "20px",
     flexGrow: 1,
     [theme.breakpoints.up("md")]: {
       transition: theme.transitions.create("margin", {
@@ -37,6 +48,31 @@ const useStyles = makeStyles((theme) => ({
       }),
       marginLeft: 0,
     },
+  },
+  topButtons: {
+    float: "right",
+  },
+  pageTitle: {
+    paddingRight: "20px",
+  },
+  paper: {
+    padding: "20px",
+  },
+  bsPaper: {
+    padding: "20px",
+    marginTop: "3rem",
+  },
+  formControlRoot: {
+    width: "100%",
+  },
+  categorySelect: {
+    marginBottom: "20px",
+  },
+  inputProjectTitle: {
+    marginBottom: "20px",
+  },
+  bsDeleteBtn: {
+    marginTop: "10px",
   },
 }));
 
@@ -189,130 +225,130 @@ function CreateProject() {
 
   function buildCategoryDropdown() {
     function mapSubcategories(subcats: ICategory[]) {
-      return subcats.map((sc, index) => (
-        <option key={index} value={sc.id}>
+      return subcats.map((sc) => (
+        <option key={"subcat-" + sc.id} value={sc.id}>
           {sc.name}
         </option>
       ));
     }
 
-    return projectCategories.get().map((cat, index) => (
-      <optgroup key={index} label={cat.name}>
-        {mapSubcategories(cat.subcategories)}
-      </optgroup>
-    ));
+    return projectCategories.value.map((cat) => {
+      return (
+        <optgroup key={"cat-" + cat.id} label={cat.name}>
+          {mapSubcategories(cat.subcategories)}
+        </optgroup>
+      );
+    });
   }
 
-  function handleDropdownSelect(event: React.ChangeEvent<HTMLSelectElement>) {
-    project.categoryId.set(parseInt(event.target.value));
+  function handleDropdownSelect(event: React.ChangeEvent<{ value: unknown }>) {
+    project.categoryId.set(parseInt(event.target.value as string));
   }
 
   return (
     <div className={classes.content}>
       <SideNav project={project} />
-      <Container fluid className="container-xxl">
-        <Row>
-          <Col lg={8}>
-            <Row className="mb-3">
-              <Col>
-                <h3 className="mt-3 d-inline-block">Create Project</h3>
-              </Col>
-              <Col>
-                <ButtonGroup
-                  aria-label="Basic example"
-                  className="mt-3 float-right"
-                >
-                  <Button variant="danger">Cancel</Button>
-                  <Button variant="primary">Preview</Button>
-                  <Button variant="success" type="submit" form="main-form">
-                    Publish
-                  </Button>
-                </ButtonGroup>
-              </Col>
-            </Row>
-            <UploadingProjectModal
-              show={showModal.get()}
-              onHide={handleOnHide}
-              successful={modalSuccess.get()}
+      <Container maxWidth="md">
+        <Box mb={2}>
+          <Grid container>
+            <Grid item sm={8}>
+              <Typography variant="h4" className={classes.pageTitle}>
+                Create Project
+              </Typography>
+            </Grid>
+            <Grid item sm={4}>
+              <ButtonGroup
+                variant="contained"
+                className={classes.topButtons}
+                aria-label="cancel preview publish"
+              >
+                <MButton color="secondary">Cancel</MButton>
+                <MButton>Preview</MButton>
+                <MButton color="primary" type="submit" form="main-form">
+                  Publish
+                </MButton>
+              </ButtonGroup>
+            </Grid>
+          </Grid>
+        </Box>
+
+        <Paper id="#main_card" className={classes.paper}>
+          <form
+            id="main-form"
+            noValidate
+            //validated={validated.get()}
+            onSubmit={handleSubmit}
+          >
+            <TextField
+              id="project-title"
+              label="Project Title"
+              classes={{ root: classes.formControlRoot }}
+              className={classes.inputProjectTitle}
+              helperText="TODO: Helper label"
+              onChange={(e) => project.title.set(e.target.value)}
+              required
             />
-            {validated.get() && formValidationErrors.get() ? (
-              <Alert variant="danger">Please fix the form errors below.</Alert>
-            ) : (
-              <></>
-            )}
 
-            <Card id="#main_card">
-              <Card.Body>
-                <Form
-                  id="main-form"
-                  noValidate
-                  validated={validated.get()}
-                  onSubmit={handleSubmit}
-                >
-                  <Form.Group controlId="formProjectTitle">
-                    <Form.Label>Project Title</Form.Label>
-                    <Form.Control
-                      onChange={(e) => project.title.set(e.target.value)}
-                      required
-                      type="text"
-                      placeholder="Enter a project title here"
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      Please enter a project title.
-                    </Form.Control.Feedback>
-                  </Form.Group>
+            <FormControl
+              className={`${classes.categorySelect} ${classes.formControlRoot}`}
+            >
+              <Select
+                labelId="project-category"
+                id="project-category"
+                native
+                onChange={handleDropdownSelect}
+                value={
+                  project.categoryId.value === 0 ? "" : project.categoryId.value
+                }
+              >
+                <option value="" disabled>
+                  Category
+                </option>
+                {buildCategoryDropdown()}
+              </Select>
+            </FormControl>
 
-                  <Form.Group controlId="formProjectCategory">
-                    <Form.Label>Project Category</Form.Label>
-                    <Form.Control
-                      as="select"
-                      required
-                      onChange={handleDropdownSelect}
-                      defaultValue=""
-                    >
-                      <option disabled value="">
-                        -- select an option --
-                      </option>
-                      {buildCategoryDropdown()}
-                    </Form.Control>
-                    <Form.Control.Feedback type="invalid">
-                      Please select a project category.
-                    </Form.Control.Feedback>
-                  </Form.Group>
-
-                  <ImageUpload
-                    images={project.uploadedImages}
-                    validated={validated.get()}
-                  />
-                  <div className="mt-3">
-                    <TextEditor
-                      description={project.description}
-                      editorState={editorState}
-                      hasText={(result) => descHasText.set(result)}
-                      validated={validated.get()}
-                    />
-                  </div>
-                  <FileUpload
-                    files={project.uploadedFiles}
-                    fakeFiles={project.fakeFiles}
-                  />
-                </Form>
-              </Card.Body>
-            </Card>
-            <BuildSteps
-              buildSteps={project.buildSteps}
+            <ImageUpload
+              images={project.uploadedImages}
               validated={validated.get()}
             />
-            <Button
-              variant="outline-primary"
-              className="float-right my-3"
-              onClick={addBuildStepClick}
-            >
-              + Add Build Step
-            </Button>
-          </Col>
-        </Row>
+            <Box marginTop={3}>
+              <TextEditor
+                description={project.description}
+                editorState={editorState}
+                hasText={(result) => descHasText.set(result)}
+                validated={validated.get()}
+              />
+            </Box>
+            <FileUpload
+              files={project.uploadedFiles}
+              fakeFiles={project.fakeFiles}
+            />
+          </form>
+        </Paper>
+        <BuildSteps
+          buildSteps={project.buildSteps}
+          validated={validated.get()}
+        />
+        <Button
+          variant="outlined"
+          color="primary"
+          className="float-right my-3"
+          onClick={addBuildStepClick}
+        >
+          + Add Build Step
+        </Button>
       </Container>
+      <UploadingProjectModal
+        show={showModal.get()}
+        onHide={handleOnHide}
+        successful={modalSuccess.get()}
+      />
+      {validated.get() && formValidationErrors.get() ? (
+        <Alert variant="danger">Please fix the form errors below.</Alert>
+      ) : (
+        <></>
+      )}
     </div>
   );
 }
@@ -352,6 +388,7 @@ function BuildStep(props: {
   // could have used props.state everywhere instead
   const buildStep = useHookstate(props.buildStep);
   const editorState = useHookstate(EditorState.createEmpty());
+  const classes = useStyles();
 
   // TODO: this will need to confirm deletion if there is any information in the buildstep
   function deleteBuildStepClick() {
@@ -363,47 +400,44 @@ function BuildStep(props: {
   }
 
   return (
-    <Card className="mt-4">
-      <Card.Body>
-        <Form id="main-form" noValidate validated={props.validated}>
-          <Form.Group controlId="formProjectTitle">
-            <Form.Label>Build Step Title</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Enter a build step title here"
-              required
-              onChange={(e) => buildStep.title.set(e.target.value)}
-            />
-            <Form.Control.Feedback type="invalid">
-              Please enter a build step title.
-            </Form.Control.Feedback>
-          </Form.Group>
-          <ImageUpload
-            images={buildStep.uploadedImages}
-            validated={props.validated}
-          />
-          <div className="mt-3">
-            <TextEditor
-              description={buildStep.description}
-              editorState={editorState}
-              validated={false}
-              hasText={() => {}}
-            />
-          </div>
-        </Form>
-        <FileUpload
-          files={buildStep.uploadedFiles}
-          fakeFiles={buildStep.fakeFiles}
+    <Paper id="#main_card" className={classes.bsPaper}>
+      <form id="main-form" noValidate>
+        <TextField
+          id="build-step-title"
+          label="Build Step Title"
+          classes={{ root: classes.formControlRoot }}
+          className={classes.inputProjectTitle}
+          helperText="TODO: Helper label"
+          onChange={(e) => buildStep.title.set(e.target.value)}
+          required
         />
-        <Button
-          variant="danger"
-          className="mt-3"
-          onClick={deleteBuildStepClick}
-        >
-          Delete
-        </Button>
-      </Card.Body>
-    </Card>
+
+        <ImageUpload
+          images={buildStep.uploadedImages}
+          validated={props.validated}
+        />
+        <div className="mt-3">
+          <TextEditor
+            description={buildStep.description}
+            editorState={editorState}
+            validated={false}
+            hasText={() => {}}
+          />
+        </div>
+      </form>
+      <FileUpload
+        files={buildStep.uploadedFiles}
+        fakeFiles={buildStep.fakeFiles}
+      />
+      <Button
+        variant="contained"
+        color="secondary"
+        className={classes.bsDeleteBtn}
+        onClick={deleteBuildStepClick}
+      >
+        Delete
+      </Button>
+    </Paper>
   );
 }
 

@@ -1,14 +1,39 @@
-import React, { useEffect } from "react";
+import { useRef } from "react";
 import {
   DragDropContext,
   Droppable,
   Draggable,
   DropResult,
 } from "react-beautiful-dnd";
-import Button from "react-bootstrap/Button";
-import Card from "react-bootstrap/Card";
 import { useHookstate, State, Downgraded, none } from "@hookstate/core";
-import { IFile } from "./types";
+
+// Material UI imports
+import { makeStyles } from "@material-ui/core/styles";
+import { grey } from "@material-ui/core/colors";
+import Button from "@material-ui/core/Button";
+import Card from "@material-ui/core/Card";
+import CardContent from "@material-ui/core/CardContent";
+import CardActions from "@material-ui/core/CardActions";
+
+// Page styles
+const useStyles = makeStyles((theme) => ({
+  cardBorderError: {
+    border: "1px solid red",
+  },
+  uploadBtn: {
+    display: "block",
+    margin: "0 auto",
+  },
+  bottomUploadBtn: {
+    marginLeft: "auto",
+  },
+  cardActions: {
+    backgroundColor: grey[100],
+  },
+  imageUpload: {
+    backgroundColor: grey[100],
+  },
+}));
 
 // Source: https://github.com/atlassian/react-beautiful-dnd/blob/master/docs/about/examples.md
 
@@ -21,13 +46,7 @@ const reorder = (list: File[], startIndex: any, endIndex: any) => {
   return result;
 };
 
-interface UploadSvgProps {
-  fill: string;
-  height: string;
-  width: string;
-}
-
-function UploadSvg(props: UploadSvgProps) {
+function UploadSvg(props: { fill: string; height: string; width: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -45,28 +64,20 @@ function UploadSvg(props: UploadSvgProps) {
   );
 }
 
-function ImageUpload(props: {
+export default function ImageUpload(props: {
   images: State<File[]>;
   validated: boolean;
 }) {
   const imgArr = useHookstate(props.images);
   const hoverImg = useHookstate<string | null>(null);
-
-  const inputField = React.useRef<HTMLInputElement>(null);
+  const classes = useStyles();
+  const inputField = useRef<HTMLInputElement>(null);
 
   // Downgrade the state because Draggable has issues with Hookstate's proxy type.
   imgArr.attach(Downgraded);
   hoverImg.attach(Downgraded);
 
   const isValid = props.validated && imgArr.length === 0;
-
-  function borderClass() {
-    if (isValid) {
-      return "border border-danger";
-    } else {
-      return "border";
-    }
-  }
 
   function feedback() {
     if (isValid) {
@@ -82,7 +93,7 @@ function ImageUpload(props: {
 
   return (
     <>
-      <Card className={borderClass()}>
+      <Card className={isValid ? classes.cardBorderError : ""}>
         <MainImageUpload
           imgArr={imgArr}
           hoverImg={hoverImg}
@@ -104,6 +115,7 @@ function MainImageUpload(props: {
   hoverImg: State<string | null>;
   inputField: React.RefObject<HTMLInputElement>;
 }) {
+  const classes = useStyles();
   const imgArr = props.imgArr;
   const hoverImg = props.hoverImg;
 
@@ -121,7 +133,11 @@ function MainImageUpload(props: {
     const defaultImg = (
       <div style={uploadCardStyle}>
         <UploadSvg fill="lightgray" height="50%" width="50%" />
-        <Button variant="primary" className="d-block mx-auto my-2">
+        <Button
+          variant="contained"
+          color="primary"
+          className={classes.uploadBtn}
+        >
           Upload Images
         </Button>
       </div>
@@ -181,7 +197,6 @@ function MainImageUpload(props: {
     outline: "3px dashed lightgray",
     outlineOffset: "-15px",
     position: "relative",
-    display: "inline-block",
     borderRadius: "4px",
   } as React.CSSProperties;
 
@@ -193,7 +208,11 @@ function MainImageUpload(props: {
 
   return (
     // TODO: Figure out why this onClick doesn't work after an image is added.
-    <div className={"bg-light"} style={cardStyle} onClick={showOpenFileDlg}>
+    <div
+      className={classes.imageUpload}
+      style={cardStyle}
+      onClick={showOpenFileDlg}
+    >
       {displayMainImage()}
       <input
         type="file"
@@ -212,6 +231,7 @@ function SortableImageList(props: {
   hoverImg: State<string | null>;
   inputField: React.RefObject<HTMLInputElement>;
 }) {
+  const classes = useStyles();
   const imgArr = props.imgArr;
   const hoverImg = props.hoverImg;
 
@@ -309,7 +329,7 @@ function SortableImageList(props: {
 
   const xStyle = {
     position: "absolute",
-    top: "-7px",
+    top: "-3px",
     left: "4px",
   } as React.CSSProperties;
 
@@ -342,7 +362,7 @@ function SortableImageList(props: {
 
   return imgArr.length > 0 ? (
     <>
-      <Card.Body className="border-top">
+      <CardContent>
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="droppable" direction="horizontal">
             {(provided, snapshot) => (
@@ -357,22 +377,21 @@ function SortableImageList(props: {
             )}
           </Droppable>
         </DragDropContext>
-      </Card.Body>
-      <Card.Footer>
+      </CardContent>
+      <CardActions className={classes.cardActions}>
         Drag to rearrange
         <Button
-          variant="primary"
-          size="sm"
-          className="float-right"
+          variant="contained"
+          color="primary"
+          size="small"
+          className={classes.bottomUploadBtn}
           onClick={showOpenFileDlg}
         >
           Upload Images
         </Button>
-      </Card.Footer>
+      </CardActions>
     </>
   ) : (
     <></>
   );
 }
-
-export default ImageUpload;

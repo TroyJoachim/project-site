@@ -277,6 +277,14 @@ function MainContentArea(props: { project: State<IProject> }) {
     }
   }
 
+  function handleEditClick() {
+    history.push("/edit-project/" + project.id.value.toString());
+  }
+
+  // Check if the comment belongs to the logged in user
+  const isThem = () =>
+    gState.identityId.value === project.user.identityId.value;
+
   const images = project.files.value.filter((f) => f.isImage);
   const avatarUrl =
     "https://d1sam1rvgl833u.cloudfront.net/fit-in/40x40/protected/" +
@@ -332,14 +340,19 @@ function MainContentArea(props: { project: State<IProject> }) {
             <ShareIcon className={classes.pageNavIcon} />
             Share
           </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            size="small"
-            className={classes.editProjectBtn}
-          >
-            Edit
-          </Button>
+          {isThem() ? (
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              className={classes.editProjectBtn}
+              onClick={handleEditClick}
+            >
+              Edit
+            </Button>
+          ) : (
+            <></>
+          )}
         </div>
 
         <DisplayImages images={images} />
