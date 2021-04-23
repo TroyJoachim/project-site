@@ -461,7 +461,7 @@ function BuildStep(props: {
     : "";
 
   return (
-    <Paper id="#main_card" className={classes.bsPaper}>
+    <Paper id={buildStep.id.value.toString()} className={classes.bsPaper}>
       <form id="main-form" noValidate>
         <TextField
           id="build-step-title"

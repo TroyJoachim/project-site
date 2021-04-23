@@ -4,6 +4,8 @@ import { useHistory } from "react-router-dom";
 import { getProjectCategories } from "./agent";
 import { ICategory } from "./types";
 import { globalState, signOut } from "./globalState";
+import { useRecoilState } from "recoil";
+import { sideMenuOpenState } from "./state";
 
 import {
   fade,
@@ -25,8 +27,7 @@ import AccountCircle from "@material-ui/icons/AccountCircle";
 import MailIcon from "@material-ui/icons/Mail";
 import NotificationsIcon from "@material-ui/icons/Notifications";
 import MoreIcon from "@material-ui/icons/MoreVert";
-import { useRecoilState } from "recoil";
-import { sideMenuOpenState } from "./state";
+import Avatar from "@material-ui/core/Avatar";
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -181,7 +182,7 @@ const useStyles = makeStyles((theme: Theme) =>
 // }
 
 export default function TopNav() {
-  const classes = useStyles();
+  const gState = useHookstate(globalState);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [
     mobileMoreAnchorEl,
@@ -189,6 +190,7 @@ export default function TopNav() {
   ] = useState<null | HTMLElement>(null);
   const [sideNavOpen, setSideNavOpen] = useRecoilState(sideMenuOpenState);
   const history = useHistory();
+  const classes = useStyles();
 
   useEffect(() => {
     // getProjectCategories().then((response) => {
@@ -239,6 +241,12 @@ export default function TopNav() {
   );
 
   const mobileMenuId = "primary-search-account-menu-mobile";
+
+  const avatarUrl =
+    "https://d1sam1rvgl833u.cloudfront.net/fit-in/40x40/protected/" +
+    gState.identityId.value +
+    "/user-avatar.png";
+
   const renderMobileMenu = (
     <Menu
       anchorEl={mobileMoreAnchorEl}
@@ -272,7 +280,14 @@ export default function TopNav() {
           aria-haspopup="true"
           color="inherit"
         >
-          <AccountCircle />
+          {gState.isAuthenticated ? (
+            <Avatar
+              alt={gState.username.value ? gState.username.value : ""}
+              src={avatarUrl}
+            />
+          ) : (
+            <AccountCircle />
+          )}
         </IconButton>
         <p>Profile</p>
       </MenuItem>
@@ -335,7 +350,14 @@ export default function TopNav() {
               onClick={handleProfileMenuOpen}
               color="inherit"
             >
-              <AccountCircle />
+              {gState.isAuthenticated ? (
+                <Avatar
+                  alt={gState.username.value ? gState.username.value : ""}
+                  src={avatarUrl}
+                />
+              ) : (
+                <AccountCircle />
+              )}
             </IconButton>
           </div>
           <div className={classes.sectionMobile}>

@@ -9,11 +9,11 @@ import { useRecoilState } from "recoil";
 import { sideMenuCategoryState } from "./state";
 import {
   Link as RouterLink,
-  NavLink,
   Switch,
   Route,
   useRouteMatch,
   useHistory,
+  useLocation,
 } from "react-router-dom";
 import CommentCard from "./CommentCard";
 import SideNav from "./SideNav";
@@ -34,7 +34,7 @@ import {
 } from "./agent";
 
 // Material UI
-import { makeStyles, withStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import { green } from "@material-ui/core/colors";
 import ThumbUpIcon from "@material-ui/icons/ThumbUp";
 import CollectionsIcon from "@material-ui/icons/Collections";
@@ -58,6 +58,7 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import GetAppIcon from "@material-ui/icons/GetApp";
 import Box from "@material-ui/core/Box";
+import { string } from "yup/lib/locale";
 
 // Page styles
 const useStyles = makeStyles((theme) => ({
@@ -134,6 +135,9 @@ const useStyles = makeStyles((theme) => ({
   iconActive: {
     color: green[500],
   },
+  pillTabRoot: {
+    textDecoration: "none"
+  }
 }));
 
 function a11yProps(index: any) {
@@ -204,6 +208,7 @@ function MainContentArea(props: { project: State<IProject> }) {
     sideMenuCategoryState
   );
   const gState = useHookstate(globalState);
+  let { path } = useRouteMatch();
   const history = useHistory();
   const classes = useStyles();
 
@@ -369,36 +374,39 @@ function MainContentArea(props: { project: State<IProject> }) {
           buildLogDisabled={buildLogDisabled()}
         />
 
-        <TabPanel value={sideNavCategory.category} index={0} p={0}>
-          <Paper className={classes.paper}>
-            <Typography variant="h5">Description</Typography>
-            <Divider className={classes.divider} />
-            <Description text={project.description.value} />
-          </Paper>
-        </TabPanel>
-        <TabPanel value={sideNavCategory.category} index={1} p={0}>
-          <Paper className={classes.paper}>
-            <Typography variant="h5">Comments</Typography>
-            <Divider className={classes.divider} />
-            <CommentCard projectId={project.id.value} />
-          </Paper>
-        </TabPanel>
-        <TabPanel value={sideNavCategory.category} index={2} p={0}>
-          <Paper className={classes.paper}>
-            <Typography variant="h5">Project Files</Typography>
-            <Divider className={classes.divider} />
-            <FileList files={props.project.files.value} />
-          </Paper>
-        </TabPanel>
-        <TabPanel value={sideNavCategory.category} index={3} p={0}>
-          {props.project.buildSteps.value ? (
-            props.project.buildSteps.map((bs, index) => (
-              <ImageCard key={index} buildStep={bs} />
-            ))
-          ) : (
-            <></>
-          )}
-        </TabPanel>
+        <Switch>
+          <Route exact path={path}>
+            <Paper className={classes.paper}>
+              <Typography variant="h5">Description</Typography>
+              <Divider className={classes.divider} />
+              <Description text={project.description.value} />
+            </Paper>
+          </Route>
+          <Route path={`${path}/description`}></Route>
+          <Route path={`${path}/comments`}>
+            <Paper className={classes.paper}>
+              <Typography variant="h5">Comments</Typography>
+              <Divider className={classes.divider} />
+              <CommentCard projectId={project.id.value} />
+            </Paper>
+          </Route>
+          <Route path={`${path}/files`}>
+            <Paper className={classes.paper}>
+              <Typography variant="h5">Project Files</Typography>
+              <Divider className={classes.divider} />
+              <FileList files={props.project.files.value} />
+            </Paper>
+          </Route>
+          <Route path={`${path}/build-log`}>
+            {props.project.buildSteps.value ? (
+              props.project.buildSteps.map((bs, index) => (
+                <ImageCard key={index} buildStep={bs} />
+              ))
+            ) : (
+              <></>
+            )}
+          </Route>
+        </Switch>
       </Container>
     </div>
   );
@@ -480,10 +488,11 @@ function DisplayImages(props: { images: IFile[] }) {
 }
 
 function PillNav(props: { filesDisabled: boolean; buildLogDisabled: boolean }) {
+  const { url } = useRouteMatch();
+
   const [sideNavCategory, setSideNavCategory] = useRecoilState(
     sideMenuCategoryState
   );
-  //const category = useHookstate(props.category);
   const classes = useStyles();
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: number) => {
@@ -506,12 +515,31 @@ function PillNav(props: { filesDisabled: boolean; buildLogDisabled: boolean }) {
         scrollButtons="auto"
         aria-label="Select build step category"
       >
-        <Tab label="Description" {...a11yProps(0)} />
-        <Tab label="Comments" {...a11yProps(1)} />
-        <Tab label="Files" {...a11yProps(2)} disabled={props.filesDisabled} />
+        <Tab
+          label="Description"
+          classes={{ root: classes.pillTabRoot}}
+          {...a11yProps(0)}
+          component={RouterLink}
+          to={`${url}/description`}
+        />
+        <Tab
+          label="Comments"
+          {...a11yProps(1)}
+          component={RouterLink}
+          to={`${url}/comments`}
+        />
+        <Tab
+          label="Files"
+          {...a11yProps(2)}
+          component={RouterLink}
+          to={`${url}/files`}
+          disabled={props.filesDisabled}
+        />
         <Tab
           label="Build Log"
           {...a11yProps(3)}
+          component={RouterLink}
+          to={`${url}/build-log`}
           disabled={props.buildLogDisabled}
         />
       </Tabs>
@@ -534,8 +562,6 @@ function Description(props: { text: string }) {
 
 function FileList(props: { files: IFile[] }) {
   const classes = useStyles();
-  // Hides the table if there are no files
-  const tableHidden = props.files.length > 0 ? "" : "d-none";
 
   async function downloadFile(
     key: string,

@@ -4,6 +4,11 @@ import { useHookstate, State } from "@hookstate/core";
 import { SideNavCategory, IProject, SideNavType } from "./types";
 import { useRecoilState } from "recoil";
 import { sideMenuOpenState, sideMenuCategoryState } from "./state";
+import {
+  Link as RouterLink,
+  useRouteMatch,
+  useLocation,
+} from "react-router-dom";
 import { HashLink } from "react-router-hash-link";
 import { makeStyles, Theme, createStyles } from "@material-ui/core/styles";
 import CommentIcon from "@material-ui/icons/Comment";
@@ -45,6 +50,9 @@ const useStyles = makeStyles((theme: Theme) =>
     displayNone: {
       display: "none",
     },
+    active: {
+      backgroundColor: "rgba(0, 0, 0, 0.08)",
+    },
   })
 );
 
@@ -53,11 +61,13 @@ export default function SideNav(props: {
   navType: SideNavType;
 }) {
   const project = useHookstate(props.project);
-  const classes = useStyles();
   const [sideNavOpen, setSideNavOpen] = useRecoilState(sideMenuOpenState);
   const [sideNavCategory, setSideNavCategory] = useRecoilState(
     sideMenuCategoryState
   );
+  const classes = useStyles();
+  const { url } = useRouteMatch();
+  const location = useLocation();
 
   const toggleDrawer = () => (
     event: React.KeyboardEvent | React.MouseEvent
@@ -85,6 +95,7 @@ export default function SideNav(props: {
   const buildStepCategories = () => {
     return project.buildSteps.map((bs, index) => (
       <ListItem
+        key={index}
         button
         className={classes.nested}
         onClick={() => {
@@ -95,7 +106,7 @@ export default function SideNav(props: {
         }}
         selected={sideNavCategory.buildStep === index}
         component={HashLink}
-        to={"#" + bs.id.value.toString()}
+        to={`${url}/build-log#${bs.id.value.toString()}`}
       >
         <ListItemText
           primary={
@@ -120,7 +131,9 @@ export default function SideNav(props: {
           <ListItem
             button
             onClick={() => handleClick(SideNavCategory.Description)}
-            selected={sideNavCategory.category === SideNavCategory.Description}
+            selected={location.pathname === `${url}/description`}
+            component={RouterLink}
+            to={`${url}/description`}
           >
             <ListItemIcon>
               <DescriptionIcon />
@@ -130,7 +143,9 @@ export default function SideNav(props: {
           <ListItem
             button
             onClick={() => handleClick(SideNavCategory.Comments)}
-            selected={sideNavCategory.category === SideNavCategory.Comments}
+            selected={location.pathname === `${url}/comments`}
+            component={RouterLink}
+            to={`${url}/comments`}
           >
             <ListItemIcon>
               <CommentIcon />
@@ -140,7 +155,9 @@ export default function SideNav(props: {
           <ListItem
             button
             onClick={() => handleClick(SideNavCategory.Files)}
-            selected={sideNavCategory.category === SideNavCategory.Files}
+            selected={location.pathname === `${url}/files`}
+            component={RouterLink}
+            to={`${url}/files`}
           >
             <ListItemIcon>
               <CloudDownloadIcon />
@@ -154,7 +171,9 @@ export default function SideNav(props: {
         <ListItem
           button
           onClick={handleBuildStepClick}
-          selected={sideNavCategory.category === SideNavCategory.BuildLog}
+          selected={location.pathname === `${url}/build-log`}
+          component={RouterLink}
+          to={`${url}/build-log`}
         >
           <ListItemIcon>
             <FormatListNumberedIcon />

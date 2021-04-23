@@ -575,49 +575,50 @@ function BuildStep(props: {
     buildStep.title.set(event.target.value);
   }
 
+  const titleHelperText = buildStep.titleInvalid.value
+    ? "Build Step Title is required."
+    : "";
+
   return (
-    <Card className="mt-4">
-      <Card.Body>
-        <Form id="main-form" noValidate validated={props.validated}>
-          <Form.Group controlId="formProjectTitle">
-            <Form.Label>Build Step Title</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Enter a build step title here"
-              required
-              onChange={handleTitleChange}
-              value={buildStep.title.value}
-            />
-            <Form.Control.Feedback type="invalid">
-              Please enter a build step title.
-            </Form.Control.Feedback>
-          </Form.Group>
-          <ImageUpload
-            images={buildStep.uploadedImages}
-            validated={props.validated}
-          />
-          <div className="mt-3">
-            <TextEditor
-              description={buildStep.description}
-              editorState={editorState}
-              validated={false}
-              hasText={() => {}}
-            />
-          </div>
-        </Form>
-        <FileUpload
-          files={buildStep.uploadedFiles}
-          fakeFiles={buildStep.fakeFiles}
+    <Paper id={buildStep.id.value.toString()} className={classes.bsPaper}>
+      <form id="main-form" noValidate>
+        <TextField
+          id="build-step-title"
+          label="Build Step Title"
+          classes={{ root: classes.formControlRoot }}
+          className={classes.inputProjectTitle}
+          error={buildStep.titleInvalid.value}
+          helperText={titleHelperText}
+          onChange={handleTitleChange}
+          value={buildStep.title.value}
+          required
         />
-        <Button
-          variant="contained"
-          color="secondary"
-          className={classes.bsDeleteBtn}
-          onClick={deleteBuildStepClick}
-        >
-          Delete
-        </Button>
-      </Card.Body>
-    </Card>
+
+        <ImageUpload
+          images={buildStep.uploadedImages}
+          validated={props.validated}
+        />
+        <div className="mt-3">
+          <TextEditor
+            description={buildStep.description}
+            editorState={editorState}
+            validated={false}
+            hasText={() => {}}
+          />
+        </div>
+      </form>
+      <FileUpload
+        files={buildStep.uploadedFiles}
+        fakeFiles={buildStep.fakeFiles}
+      />
+      <Button
+        variant="contained"
+        color="secondary"
+        className={classes.bsDeleteBtn}
+        onClick={deleteBuildStepClick}
+      >
+        Delete
+      </Button>
+    </Paper>
   );
 }
