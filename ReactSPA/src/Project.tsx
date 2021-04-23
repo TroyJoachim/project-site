@@ -17,7 +17,14 @@ import {
 } from "react-router-dom";
 import CommentCard from "./CommentCard";
 import SideNav from "./SideNav";
-import { IFile, IProject, IBuildStep, IUser, SideNavCategory } from "./types";
+import {
+  IFile,
+  IProject,
+  IBuildStep,
+  IUser,
+  SideNavCategory,
+  SideNavType,
+} from "./types";
 import {
   getProject,
   likeProject,
@@ -293,7 +300,7 @@ function MainContentArea(props: { project: State<IProject> }) {
 
   return (
     <div className={classes.content}>
-      <SideNav project={project} />
+      <SideNav project={project} navType={SideNavType.Project} />
       <Container maxWidth="md">
         <Grid container className={classes.titleWrapper}>
           <Grid item sm={7}>

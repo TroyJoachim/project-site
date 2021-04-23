@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { useHookstate, Downgraded, State, none } from "@hookstate/core";
 import { useHistory } from "react-router-dom";
-import Alert from "react-bootstrap/Alert";
 import ImageUpload from "./ImageUpload";
 import TextEditor from "./TextEditor";
 import FileUpload from "./FileUpload";
@@ -11,7 +10,9 @@ import { IBuildStep, IProject, IUser, ICategory, SideNavType } from "./types";
 import { createProject, getProjectCategories } from "./agent";
 import SideNav from "./SideNav";
 
+// Material UI
 import { makeStyles } from "@material-ui/core/styles";
+import Snackbar from "@material-ui/core/Snackbar";
 import Container from "@material-ui/core/Container";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
@@ -107,10 +108,19 @@ function CreateProject() {
 
   // Hookstate
   const project = useHookstate<IProject>(initProject);
+  const titleError = useHookstate<{ invalid: boolean; message: string }>({
+    invalid: false,
+    message: "",
+  });
+  const categoryError = useHookstate<{ invalid: boolean; message: string }>({
+    invalid: false,
+    message: "",
+  });
   const showModal = useHookstate(false);
   const modalSuccess = useHookstate(false);
   const projectCategories = useHookstate<ICategory[]>([]);
   const validated = useHookstate(false);
+  const showAlert = useHookstate(false);
   const descHasText = useHookstate(false);
   const formValidationErrors = useHookstate(false);
   const hasImage = useHookstate(false);
@@ -136,6 +146,7 @@ function CreateProject() {
       id: 0,
       order: order,
       title: "",
+      titleInvalid: false,
       description: "",
       images: [],
       uploadedImages: [],
@@ -151,22 +162,32 @@ function CreateProject() {
     event.stopPropagation();
     validated.set(true);
     formValidationErrors.set(false);
+    titleError.set({ invalid: false, message: "" });
+    showAlert.set(false);
 
     // Validate the project title
     if (project.title.value.length === 0) {
       formValidationErrors.set(true);
+      showAlert.set(true);
+      titleError.set({ invalid: true, message: "Project Title is required." });
       console.log("Missing project title");
     }
 
     // Validate category dropdown
     if (project.categoryId.value === 0) {
       formValidationErrors.set(true);
+      showAlert.set(true);
+      categoryError.set({
+        invalid: true,
+        message: "Project Category is required.",
+      });
       console.log("Category not selected");
     }
 
     // Check if at least on image has been selected
     if (project.uploadedImages.length === 0) {
       formValidationErrors.set(true);
+      showAlert.set(true);
       console.log("Missing project image");
       hasImage.set(false);
     } else {
@@ -176,6 +197,7 @@ function CreateProject() {
     // Check for a project description
     if (!descHasText.get()) {
       formValidationErrors.set(true);
+      showAlert.set(true);
       console.log("Missing desciption");
     }
 
@@ -183,13 +205,24 @@ function CreateProject() {
     if (project.buildSteps.length > 0) {
       // Check if all the build steps have a title and at least one image.
       const bsResult = project.buildSteps.map((bs) => {
-        return bs.title.get().length > 0 && bs.uploadedImages.get().length > 0;
+        if (bs.title.value.length === 0) {
+          bs.titleInvalid.set(true);
+          return false;
+        }
+        if (bs.uploadedImages.value.length === 0) {
+          return false;
+        }
+        // Build step validation passedF
+        return true;
       });
 
       // Check if any return false, meaning that one of the build steps failed validation.
       const result = bsResult.includes(false);
       // If one failed validation.
-      if (result) formValidationErrors.set(true);
+      if (result) {
+        formValidationErrors.set(true);
+        showAlert.set(true);
+      }
       // Build Step validation passed
     }
 
@@ -241,13 +274,30 @@ function CreateProject() {
     });
   }
 
+  function handleProjectTitleChange(
+    event: React.ChangeEvent<{ value: unknown }>
+  ) {
+    // if there is an error, then clear in on change.
+    if (titleError.invalid.value) {
+      titleError.set({ invalid: false, message: "" });
+    }
+    project.title.set(event.target.value as string);
+  }
+
+  function handleAlertClose() {
+    showAlert.set(false);
+  }
+
   function handleDropdownSelect(event: React.ChangeEvent<{ value: unknown }>) {
+    if (categoryError.invalid.value) {
+      categoryError.set({ invalid: false, message: "" });
+    }
     project.categoryId.set(parseInt(event.target.value as string));
   }
 
   return (
     <div className={classes.content}>
-      <SideNav project={project} />
+      <SideNav project={project} navType={SideNavType.CreateProject} />
       <Container maxWidth="md">
         <Box mb={2}>
           <Grid container>
@@ -273,40 +323,37 @@ function CreateProject() {
         </Box>
 
         <Paper id="#main_card" className={classes.paper}>
-          <form
-            id="main-form"
-            noValidate
-            //validated={validated.get()}
-            onSubmit={handleSubmit}
-          >
+          <form id="main-form" noValidate onSubmit={handleSubmit}>
             <TextField
+              error={titleError.invalid.value}
               id="project-title"
               label="Project Title"
               classes={{ root: classes.formControlRoot }}
               className={classes.inputProjectTitle}
-              helperText="TODO: Helper label"
-              onChange={(e) => project.title.set(e.target.value)}
+              helperText={titleError.message.value}
+              onChange={handleProjectTitleChange}
               required
             />
 
-            <FormControl
+            <TextField
               className={`${classes.categorySelect} ${classes.formControlRoot}`}
+              id="project-category"
+              label="Project Category"
+              select
+              required
+              SelectProps={{
+                native: true,
+              }}
+              error={categoryError.invalid.value}
+              onChange={handleDropdownSelect}
+              value={
+                project.categoryId.value === 0 ? "" : project.categoryId.value
+              }
+              helperText={categoryError.message.value}
             >
-              <Select
-                labelId="project-category"
-                id="project-category"
-                native
-                onChange={handleDropdownSelect}
-                value={
-                  project.categoryId.value === 0 ? "" : project.categoryId.value
-                }
-              >
-                <option value="" disabled>
-                  Category
-                </option>
-                {buildCategoryDropdown()}
-              </Select>
-            </FormControl>
+              <option value="" disabled></option>
+              {buildCategoryDropdown()}
+            </TextField>
 
             <ImageUpload
               images={project.uploadedImages}
@@ -344,11 +391,14 @@ function CreateProject() {
         onHide={handleOnHide}
         successful={modalSuccess.get()}
       />
-      {validated.get() && formValidationErrors.get() ? (
-        <Alert variant="danger">Please fix the form errors below.</Alert>
-      ) : (
-        <></>
-      )}
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        open={showAlert.value}
+        onClose={handleAlertClose}
+        message="Please fix the form errors below."
+        key={"top" + "center"}
+        autoHideDuration={10000}
+      />
     </div>
   );
 }
@@ -399,6 +449,17 @@ function BuildStep(props: {
     props.reorder();
   }
 
+  function handleTitleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    if (buildStep.titleInvalid.value) {
+      buildStep.titleInvalid.set(false);
+    }
+    buildStep.title.set(event.target.value);
+  }
+
+  const titleHelperText = buildStep.titleInvalid.value
+    ? "Build Step Title is required."
+    : "";
+
   return (
     <Paper id="#main_card" className={classes.bsPaper}>
       <form id="main-form" noValidate>
@@ -407,8 +468,9 @@ function BuildStep(props: {
           label="Build Step Title"
           classes={{ root: classes.formControlRoot }}
           className={classes.inputProjectTitle}
-          helperText="TODO: Helper label"
-          onChange={(e) => buildStep.title.set(e.target.value)}
+          error={buildStep.titleInvalid.value}
+          helperText={titleHelperText}
+          onChange={handleTitleChange}
           required
         />
 

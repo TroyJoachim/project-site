@@ -169,6 +169,7 @@ namespace WebAPI.Controllers
                     Title = project.Title,
                     Description = project.Description,
                     Category = project.Category.Name,
+                    CategoryId = project.Category.Id,
                     CreatedAt = project.CreatedAt,
                     EditedAt = project.EditedAt,
                     User = userDto,

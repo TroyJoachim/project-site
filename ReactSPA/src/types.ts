@@ -61,6 +61,7 @@ export interface IBuildStep {
   id: number;
   order: number;
   title: string;
+  titleInvalid: boolean;
   description: string;
   images: IFile[];
   uploadedImages: File[];

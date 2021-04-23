@@ -1,12 +1,6 @@
 import React, { useEffect } from "react";
 import { useHookstate, Downgraded, State, none } from "@hookstate/core";
 import { useHistory } from "react-router-dom";
-import Alert from "react-bootstrap/Alert";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import ImageUpload from "./ImageUpload";
@@ -25,6 +19,74 @@ import {
 import { editProject, getProjectCategories, getProject } from "./agent";
 import { Storage } from "aws-amplify";
 import { EditorState, convertFromRaw, RawDraftContentState } from "draft-js";
+import SideNav from "./SideNav";
+
+// Material UI
+import { makeStyles } from "@material-ui/core/styles";
+import Snackbar from "@material-ui/core/Snackbar";
+import Container from "@material-ui/core/Container";
+import Paper from "@material-ui/core/Paper";
+import Typography from "@material-ui/core/Typography";
+import ButtonGroup from "@material-ui/core/ButtonGroup";
+import { default as MButton } from "@material-ui/core/Button";
+import Box from "@material-ui/core/Box";
+import Grid from "@material-ui/core/Grid";
+import FormControl from "@material-ui/core/FormControl";
+import InputLabel from "@material-ui/core/InputLabel";
+import Input from "@material-ui/core/Input";
+import FormHelperText from "@material-ui/core/FormHelperText";
+import Select from "@material-ui/core/Select";
+import MenuItem from "@material-ui/core/MenuItem";
+import ListSubheader from "@material-ui/core/ListSubheader";
+import Button from "@material-ui/core/Button";
+import TextField from "@material-ui/core/TextField";
+
+// Page styles
+const useStyles = makeStyles((theme) => ({
+  content: {
+    marginTop: "20px",
+    flexGrow: 1,
+    [theme.breakpoints.up("md")]: {
+      transition: theme.transitions.create("margin", {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+      }),
+      marginLeft: 240,
+    },
+    [theme.breakpoints.down("sm")]: {
+      transition: theme.transitions.create("margin", {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      marginLeft: 0,
+    },
+  },
+  topButtons: {
+    float: "right",
+  },
+  pageTitle: {
+    paddingRight: "20px",
+  },
+  paper: {
+    padding: "20px",
+  },
+  bsPaper: {
+    padding: "20px",
+    marginTop: "3rem",
+  },
+  formControlRoot: {
+    width: "100%",
+  },
+  categorySelect: {
+    marginBottom: "20px",
+  },
+  inputProjectTitle: {
+    marginBottom: "20px",
+  },
+  bsDeleteBtn: {
+    marginTop: "10px",
+  },
+}));
 
 export default function EditProject(props: any) {
   const initUser: IUser = {
@@ -57,6 +119,14 @@ export default function EditProject(props: any) {
 
   // Setup state
   const project = useHookstate<IProject>(initProject);
+  const titleError = useHookstate<{ invalid: boolean; message: string }>({
+    invalid: false,
+    message: "",
+  });
+  const categoryError = useHookstate<{ invalid: boolean; message: string }>({
+    invalid: false,
+    message: "",
+  });
   const showModal = useHookstate(false);
   const modalSuccess = useHookstate(false);
   const projectCategories = useHookstate<ICategory[]>([]);
@@ -66,7 +136,9 @@ export default function EditProject(props: any) {
   const hasImage = useHookstate(false);
   const modalRoute = useHookstate("");
   const editorState = useHookstate(EditorState.createEmpty());
+  const showAlert = useHookstate(false);
   const history = useHistory();
+  const classes = useStyles();
 
   // Downgrade image state property because Hookstate can't handle the File type
   project.images.attach(Downgraded);
@@ -199,6 +271,7 @@ export default function EditProject(props: any) {
       id: 0,
       order: order,
       title: "",
+      titleInvalid: false,
       description: "",
       images: [],
       uploadedImages: [],
@@ -289,129 +362,149 @@ export default function EditProject(props: any) {
 
   function buildCategoryDropdown() {
     function mapSubcategories(subcats: ICategory[]) {
-      return subcats.map((sc, index) => (
-        <option key={index} value={sc.id}>
+      return subcats.map((sc) => (
+        <option key={"subcat-" + sc.id} value={sc.id}>
           {sc.name}
         </option>
       ));
     }
 
-    return projectCategories.get().map((cat, index) => (
-      <optgroup key={index} label={cat.name}>
-        {mapSubcategories(cat.subcategories)}
-      </optgroup>
-    ));
+    return projectCategories.value.map((cat) => {
+      return (
+        <optgroup key={"cat-" + cat.id} label={cat.name}>
+          {mapSubcategories(cat.subcategories)}
+        </optgroup>
+      );
+    });
   }
 
-  function handleDropdownSelect(event: React.ChangeEvent<HTMLSelectElement>) {
-    project.categoryId.set(parseInt(event.target.value));
+  function handleProjectTitleChange(
+    event: React.ChangeEvent<{ value: unknown }>
+  ) {
+    // if there is an error, then clear in on change.
+    if (titleError.invalid.value) {
+      titleError.set({ invalid: false, message: "" });
+    }
+    project.title.set(event.target.value as string);
+  }
+
+  function handleAlertClose() {
+    showAlert.set(false);
+  }
+
+  function handleDropdownSelect(event: React.ChangeEvent<{ value: unknown }>) {
+    if (categoryError.invalid.value) {
+      categoryError.set({ invalid: false, message: "" });
+    }
+    project.categoryId.set(parseInt(event.target.value as string));
   }
 
   return (
-    <Container fluid className="container-xxl">
-      <Row>
-        <Col lg={8}>
-          <Row className="mb-3">
-            <Col>
-              <h3 className="mt-3 d-inline-block">Edit Project</h3>
-            </Col>
-            <Col>
+    <div className={classes.content}>
+      <SideNav project={project} navType={SideNavType.EditProject} />
+      <Container maxWidth="md">
+        <Box mb={2}>
+          <Grid container>
+            <Grid item sm={8}>
+              <Typography variant="h4" className={classes.pageTitle}>
+                Edit Project
+              </Typography>
+            </Grid>
+            <Grid item sm={4}>
               <ButtonGroup
-                aria-label="Basic example"
-                className="mt-3 float-right"
+                variant="contained"
+                className={classes.topButtons}
+                aria-label="cancel preview publish"
               >
-                <Button variant="danger">Cancel</Button>
-                <Button variant="primary">Preview</Button>
-                <Button variant="success" type="submit" form="main-form">
+                <MButton color="secondary">Cancel</MButton>
+                <MButton>Preview</MButton>
+                <MButton color="primary" type="submit" form="main-form">
                   Publish
-                </Button>
+                </MButton>
               </ButtonGroup>
-            </Col>
-          </Row>
-          <UploadingProjectModal
-            show={showModal.get()}
-            onHide={handleOnHide}
-            successful={modalSuccess.get()}
-          />
-          {validated.get() && formValidationErrors.get() ? (
-            <Alert variant="danger">Please fix the form errors below.</Alert>
-          ) : (
-            <></>
-          )}
+            </Grid>
+          </Grid>
+        </Box>
 
-          <Card id="#main_card">
-            <Card.Body>
-              <Form
-                id="main-form"
-                noValidate
+        <Paper id="#main_card" className={classes.paper}>
+          <form id="main-form" noValidate onSubmit={handleSubmit}>
+            <TextField
+              error={titleError.invalid.value}
+              id="project-title"
+              label="Project Title"
+              classes={{ root: classes.formControlRoot }}
+              className={classes.inputProjectTitle}
+              helperText={titleError.message.value}
+              onChange={handleProjectTitleChange}
+              value={project.title.value}
+              required
+            />
+
+            <TextField
+              className={`${classes.categorySelect} ${classes.formControlRoot}`}
+              id="project-category"
+              label="Project Category"
+              select
+              required
+              SelectProps={{
+                native: true,
+              }}
+              error={categoryError.invalid.value}
+              onChange={handleDropdownSelect}
+              value={
+                project.categoryId.value === 0 ? "" : project.categoryId.value
+              }
+              helperText={categoryError.message.value}
+            >
+              <option value="" disabled></option>
+              {buildCategoryDropdown()}
+            </TextField>
+
+            <ImageUpload
+              images={project.uploadedImages}
+              validated={validated.get()}
+            />
+            <Box marginTop={3}>
+              <TextEditor
+                description={project.description}
+                editorState={editorState}
+                hasText={(result) => descHasText.set(result)}
                 validated={validated.get()}
-                onSubmit={handleSubmit}
-              >
-                <Form.Group controlId="formProjectTitle">
-                  <Form.Label>Project Title</Form.Label>
-                  <Form.Control
-                    onChange={(e) => project.title.set(e.target.value)}
-                    required
-                    type="text"
-                    value={project.title.value}
-                    placeholder="Enter a project title here"
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    Please enter a project title.
-                  </Form.Control.Feedback>
-                </Form.Group>
-
-                <Form.Group controlId="formProjectCategory">
-                  <Form.Label>Project Category</Form.Label>
-                  <Form.Control
-                    as="select"
-                    required
-                    onChange={handleDropdownSelect}
-                    defaultValue={project.categoryId.value}
-                  >
-                    <option disabled value="">
-                      -- select an option --
-                    </option>
-                    {buildCategoryDropdown()}
-                  </Form.Control>
-                  <Form.Control.Feedback type="invalid">
-                    Please select a project category.
-                  </Form.Control.Feedback>
-                </Form.Group>
-
-                <ImageUpload
-                  images={project.uploadedImages}
-                  validated={validated.get()}
-                />
-                <div className="mt-3">
-                  <TextEditor
-                    description={project.description}
-                    editorState={editorState}
-                    hasText={(result) => descHasText.set(result)}
-                    validated={validated.get()}
-                  />
-                </div>
-                <FileUpload
-                  files={project.uploadedFiles}
-                  fakeFiles={project.fakeFiles}
-                />
-              </Form>
-            </Card.Body>
-          </Card>
-          <BuildSteps
-            buildSteps={project.buildSteps}
-            validated={validated.get()}
-          />
-          <Button
-            variant="outline-primary"
-            className="float-right my-3"
-            onClick={addBuildStepClick}
-          >
-            + Add Build Step
-          </Button>
-        </Col>
-      </Row>
-    </Container>
+              />
+            </Box>
+            <FileUpload
+              files={project.uploadedFiles}
+              fakeFiles={project.fakeFiles}
+            />
+          </form>
+        </Paper>
+        <BuildSteps
+          buildSteps={project.buildSteps}
+          validated={validated.get()}
+        />
+        <Button
+          variant="outlined"
+          color="primary"
+          className="float-right my-3"
+          onClick={addBuildStepClick}
+        >
+          + Add Build Step
+        </Button>
+      </Container>
+      <UploadingProjectModal
+        show={showModal.get()}
+        onHide={handleOnHide}
+        successful={modalSuccess.get()}
+      />
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        open={showAlert.value}
+        onClose={handleAlertClose}
+        message="Please fix the form errors below."
+        key={"top" + "center"}
+        autoHideDuration={10000}
+      />
+    </div>
   );
 }
 
@@ -450,6 +543,7 @@ function BuildStep(props: {
   // could have used props.state everywhere instead
   const buildStep = useHookstate(props.buildStep);
   const editorState = useHookstate(EditorState.createEmpty());
+  const classes = useStyles();
 
   useEffect(() => {
     if (buildStep.description.value !== "") {
@@ -474,6 +568,13 @@ function BuildStep(props: {
     props.reorder();
   }
 
+  function handleTitleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    if (buildStep.titleInvalid.value) {
+      buildStep.titleInvalid.set(false);
+    }
+    buildStep.title.set(event.target.value);
+  }
+
   return (
     <Card className="mt-4">
       <Card.Body>
@@ -484,7 +585,7 @@ function BuildStep(props: {
               type="text"
               placeholder="Enter a build step title here"
               required
-              onChange={(e) => buildStep.title.set(e.target.value)}
+              onChange={handleTitleChange}
               value={buildStep.title.value}
             />
             <Form.Control.Feedback type="invalid">
@@ -509,8 +610,9 @@ function BuildStep(props: {
           fakeFiles={buildStep.fakeFiles}
         />
         <Button
-          variant="danger"
-          className="mt-3"
+          variant="contained"
+          color="secondary"
+          className={classes.bsDeleteBtn}
           onClick={deleteBuildStepClick}
         >
           Delete

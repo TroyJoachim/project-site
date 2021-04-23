@@ -1,17 +1,11 @@
 import React from "react";
 
 import { useHookstate, State } from "@hookstate/core";
-import { Link, useRouteMatch, useLocation } from "react-router-dom";
-import { IBuildStep, SideNavCategory, IProject } from "./types";
+import { SideNavCategory, IProject, SideNavType } from "./types";
 import { useRecoilState } from "recoil";
 import { sideMenuOpenState, sideMenuCategoryState } from "./state";
-import { HashLink } from 'react-router-hash-link';
-import {
-  makeStyles,
-  Theme,
-  useTheme,
-  createStyles,
-} from "@material-ui/core/styles";
+import { HashLink } from "react-router-hash-link";
+import { makeStyles, Theme, createStyles } from "@material-ui/core/styles";
 import CommentIcon from "@material-ui/icons/Comment";
 import CloudDownloadIcon from "@material-ui/icons/CloudDownload";
 import FormatListNumberedIcon from "@material-ui/icons/FormatListNumbered";
@@ -48,10 +42,16 @@ const useStyles = makeStyles((theme: Theme) =>
     nested: {
       paddingLeft: theme.spacing(3),
     },
+    displayNone: {
+      display: "none",
+    },
   })
 );
 
-export default function SideNav(props: { project: State<IProject> }) {
+export default function SideNav(props: {
+  project: State<IProject>;
+  navType: SideNavType;
+}) {
   const project = useHookstate(props.project);
   const classes = useStyles();
   const [sideNavOpen, setSideNavOpen] = useRecoilState(sideMenuOpenState);
@@ -109,41 +109,47 @@ export default function SideNav(props: { project: State<IProject> }) {
     ));
   };
 
+  // TODO: Might be able to change to a boolean in the future if the other types are not needed.
+  const displayTopCategories =
+    props.navType === SideNavType.Project ? "" : classes.displayNone;
+
   const list = () => (
     <div className={classes.list} role="presentation">
-      <List>
-        <ListItem
-          button
-          onClick={() => handleClick(SideNavCategory.Description)}
-          selected={sideNavCategory.category === SideNavCategory.Description}
-        >
-          <ListItemIcon>
-            <DescriptionIcon />
-          </ListItemIcon>
-          <ListItemText primary={"Description"} />
-        </ListItem>
-        <ListItem
-          button
-          onClick={() => handleClick(SideNavCategory.Comments)}
-          selected={sideNavCategory.category === SideNavCategory.Comments}
-        >
-          <ListItemIcon>
-            <CommentIcon />
-          </ListItemIcon>
-          <ListItemText primary={"Comments"} />
-        </ListItem>
-        <ListItem
-          button
-          onClick={() => handleClick(SideNavCategory.Files)}
-          selected={sideNavCategory.category === SideNavCategory.Files}
-        >
-          <ListItemIcon>
-            <CloudDownloadIcon />
-          </ListItemIcon>
-          <ListItemText primary={"Files"} />
-        </ListItem>
-      </List>
-      <Divider />
+      <div className={displayTopCategories}>
+        <List>
+          <ListItem
+            button
+            onClick={() => handleClick(SideNavCategory.Description)}
+            selected={sideNavCategory.category === SideNavCategory.Description}
+          >
+            <ListItemIcon>
+              <DescriptionIcon />
+            </ListItemIcon>
+            <ListItemText primary={"Description"} />
+          </ListItem>
+          <ListItem
+            button
+            onClick={() => handleClick(SideNavCategory.Comments)}
+            selected={sideNavCategory.category === SideNavCategory.Comments}
+          >
+            <ListItemIcon>
+              <CommentIcon />
+            </ListItemIcon>
+            <ListItemText primary={"Comments"} />
+          </ListItem>
+          <ListItem
+            button
+            onClick={() => handleClick(SideNavCategory.Files)}
+            selected={sideNavCategory.category === SideNavCategory.Files}
+          >
+            <ListItemIcon>
+              <CloudDownloadIcon />
+            </ListItemIcon>
+            <ListItemText primary={"Files"} />
+          </ListItem>
+        </List>
+        <Divider />
+      </div>
       <List>
         <ListItem
           button
