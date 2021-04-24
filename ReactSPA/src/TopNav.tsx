@@ -6,7 +6,9 @@ import { ICategory } from "./types";
 import { globalState, signOut } from "./globalState";
 import { useRecoilState } from "recoil";
 import { sideMenuOpenState } from "./state";
+import SearchDialog from "./SearchDialog";
 
+// Material UI
 import {
   fade,
   makeStyles,
@@ -21,13 +23,20 @@ import InputBase from "@material-ui/core/InputBase";
 import Badge from "@material-ui/core/Badge";
 import MenuItem from "@material-ui/core/MenuItem";
 import Menu from "@material-ui/core/Menu";
+import MoreIcon from "@material-ui/icons/MoreVert";
+import Avatar from "@material-ui/core/Avatar";
+import Button from "@material-ui/core/Button";
+import ListItemIcon from "@material-ui/core/ListItemIcon";
+import ListItemText from "@material-ui/core/ListItemText";
+import ThumbUpIcon from "@material-ui/icons/ThumbUp";
+import CollectionsIcon from "@material-ui/icons/Collections";
+import MailIcon from "@material-ui/icons/Mail";
+import NotificationsIcon from "@material-ui/icons/Notifications";
 import MenuIcon from "@material-ui/icons/Menu";
 import SearchIcon from "@material-ui/icons/Search";
 import AccountCircle from "@material-ui/icons/AccountCircle";
-import MailIcon from "@material-ui/icons/Mail";
-import NotificationsIcon from "@material-ui/icons/Notifications";
-import MoreIcon from "@material-ui/icons/MoreVert";
-import Avatar from "@material-ui/core/Avatar";
+import ExitToAppIcon from "@material-ui/icons/ExitToApp";
+import AssignmentIcon from "@material-ui/icons/Assignment";
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -48,30 +57,6 @@ const useStyles = makeStyles((theme: Theme) =>
       [theme.breakpoints.up("sm")]: {
         display: "block",
       },
-    },
-    search: {
-      position: "relative",
-      borderRadius: theme.shape.borderRadius,
-      backgroundColor: fade(theme.palette.common.white, 0.15),
-      "&:hover": {
-        backgroundColor: fade(theme.palette.common.white, 0.25),
-      },
-      marginRight: theme.spacing(2),
-      marginLeft: 0,
-      width: "100%",
-      [theme.breakpoints.up("sm")]: {
-        marginLeft: theme.spacing(3),
-        width: "auto",
-      },
-    },
-    searchIcon: {
-      padding: theme.spacing(0, 2),
-      height: "100%",
-      position: "absolute",
-      pointerEvents: "none",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
     },
     inputRoot: {
       color: "inherit",
@@ -97,6 +82,16 @@ const useStyles = makeStyles((theme: Theme) =>
       [theme.breakpoints.up("md")]: {
         display: "none",
       },
+    },
+    btnRoot: {
+      borderColor: "#ffffff",
+      color: "#ffffff",
+    },
+    signInBtn: {
+      margin: "5px 10px",
+    },
+    listItemIconRoot: {
+      minWidth: "35px",
     },
   })
 );
@@ -189,6 +184,7 @@ export default function TopNav() {
     setMobileMoreAnchorEl,
   ] = useState<null | HTMLElement>(null);
   const [sideNavOpen, setSideNavOpen] = useRecoilState(sideMenuOpenState);
+  const searchDialogOpen = useHookstate(false);
   const history = useHistory();
   const classes = useStyles();
 
@@ -224,21 +220,82 @@ export default function TopNav() {
     setSideNavOpen(!sideNavOpen);
   };
 
+  const handleMyAccountClick = () => {
+    history.push(`/my-account/${gState.username.value}`);
+    handleMenuClose();
+  };
+
+  const handleSearchDialogOpen = () => {
+    searchDialogOpen.set(true);
+  };
+
   const menuId = "primary-search-account-menu";
   const renderMenu = (
     <Menu
       anchorEl={anchorEl}
-      anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       id={menuId}
       keepMounted
       transformOrigin={{ vertical: "top", horizontal: "right" }}
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-      <MenuItem onClick={handleMenuClose}>My account</MenuItem>
+      <MenuItem onClick={handleMenuClose}>
+        <ListItemIcon classes={{ root: classes.listItemIconRoot }}>
+          <AssignmentIcon />
+        </ListItemIcon>
+        <ListItemText primary="My Projects" />
+      </MenuItem>
+
+      <MenuItem onClick={handleMenuClose}>
+        <ListItemIcon classes={{ root: classes.listItemIconRoot }}>
+          <ThumbUpIcon />
+        </ListItemIcon>
+        <ListItemText primary="My Likes" />
+      </MenuItem>
+
+      <MenuItem onClick={handleMenuClose}>
+        <ListItemIcon classes={{ root: classes.listItemIconRoot }}>
+          <CollectionsIcon />
+        </ListItemIcon>
+        <ListItemText primary="My Collects" />
+      </MenuItem>
+
+      <MenuItem onClick={handleMyAccountClick}>
+        <ListItemIcon classes={{ root: classes.listItemIconRoot }}>
+          <AccountCircle />
+        </ListItemIcon>
+        <ListItemText primary="My account" />
+      </MenuItem>
+
+      <MenuItem onClick={signOut}>
+        <ListItemIcon classes={{ root: classes.listItemIconRoot }}>
+          <ExitToAppIcon />
+        </ListItemIcon>
+        <ListItemText primary="Sign out" />
+      </MenuItem>
     </Menu>
   );
+  // const renderCategoryMenu = (
+  //   <Menu
+  //     anchorEl={anchorEl}
+  //     anchorOrigin={{ vertical: "top", horizontal: "right" }}
+  //     id={"category-menu"}
+  //     keepMounted
+  //     transformOrigin={{ vertical: "top", horizontal: "right" }}
+  //     open={isMenuOpen}
+  //     onClose={handleMenuClose}
+  //     marginThreshold={0}
+  //     PaperProps={{
+  //       style: {
+  //         width: "100%",
+  //         maxWidth: "100%",
+  //         left: 0,
+  //         right: 0,
+  //       },
+  //     }}
+  //   ></Menu>
+  // );
 
   const mobileMenuId = "primary-search-account-menu-mobile";
 
@@ -253,7 +310,7 @@ export default function TopNav() {
       anchorOrigin={{ vertical: "top", horizontal: "right" }}
       id={mobileMenuId}
       keepMounted
-      transformOrigin={{ vertical: "top", horizontal: "right" }}
+      transformOrigin={{ vertical: "bottom", horizontal: "right" }}
       open={isMobileMenuOpen}
       onClose={handleMobileMenuClose}
     >
@@ -317,20 +374,14 @@ export default function TopNav() {
           >
             Material-UI
           </Typography>
-          <div className={classes.search}>
-            <div className={classes.searchIcon}>
-              <SearchIcon />
-            </div>
-            <InputBase
-              placeholder="Search…"
-              classes={{
-                root: classes.inputRoot,
-                input: classes.inputInput,
-              }}
-              inputProps={{ "aria-label": "search" }}
-            />
-          </div>
           <div className={classes.grow} />
+          <IconButton
+            aria-label="search"
+            color="inherit"
+            onClick={handleSearchDialogOpen}
+          >
+            <SearchIcon />
+          </IconButton>
           <div className={classes.sectionDesktop}>
             <IconButton aria-label="show 4 new mails" color="inherit">
               <Badge badgeContent={4} color="secondary">
@@ -342,23 +393,32 @@ export default function TopNav() {
                 <NotificationsIcon />
               </Badge>
             </IconButton>
-            <IconButton
-              edge="end"
-              aria-label="account of current user"
-              aria-controls={menuId}
-              aria-haspopup="true"
-              onClick={handleProfileMenuOpen}
-              color="inherit"
-            >
-              {gState.isAuthenticated ? (
+            {gState.isAuthenticated.value ? (
+              <IconButton
+                edge="end"
+                aria-label="account of current user"
+                aria-controls={menuId}
+                aria-haspopup="true"
+                onClick={handleProfileMenuOpen}
+                color="inherit"
+              >
                 <Avatar
                   alt={gState.username.value ? gState.username.value : ""}
                   src={avatarUrl}
                 />
-              ) : (
-                <AccountCircle />
-              )}
-            </IconButton>
+              </IconButton>
+            ) : (
+              <Button
+                variant="outlined"
+                color="secondary"
+                size="small"
+                classes={{ root: classes.btnRoot }}
+                className={classes.signInBtn}
+                onClick={() => history.push("/sign-in")}
+              >
+                SIGN IN
+              </Button>
+            )}
           </div>
           <div className={classes.sectionMobile}>
             <IconButton
@@ -373,6 +433,7 @@ export default function TopNav() {
           </div>
         </Toolbar>
       </AppBar>
+      <SearchDialog open={searchDialogOpen} />
       {renderMobileMenu}
       {renderMenu}
     </>

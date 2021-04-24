@@ -1,12 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, createRef } from "react";
 import { useHookstate, State } from "@hookstate/core";
 import { globalState } from "./globalState";
 import draftToHtml from "draftjs-to-html";
 import ReactHtmlParser from "react-html-parser";
 import { localizeDateTime, downloadBlob, humanFileSize } from "./helpers";
 import { Storage } from "aws-amplify";
-import { useRecoilState } from "recoil";
-import { sideMenuCategoryState } from "./state";
+import { useScroll } from "./hooks";
 import {
   Link as RouterLink,
   Switch,
@@ -58,7 +57,6 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import GetAppIcon from "@material-ui/icons/GetApp";
 import Box from "@material-ui/core/Box";
-import { string } from "yup/lib/locale";
 
 // Page styles
 const useStyles = makeStyles((theme) => ({
@@ -135,9 +133,6 @@ const useStyles = makeStyles((theme) => ({
   iconActive: {
     color: green[500],
   },
-  pillTabRoot: {
-    textDecoration: "none"
-  }
 }));
 
 function a11yProps(index: any) {
@@ -145,17 +140,6 @@ function a11yProps(index: any) {
     id: `simple-tab-${index}`,
     "aria-controls": `simple-tabpanel-${index}`,
   };
-}
-
-// If the URL doesn't have the category, then default it to the description category
-function defaultCategory(url: any, pathname: string) {
-  const categories = ["/description", "/comments", "/files", "/build-log"];
-  if (new RegExp(categories.join("|")).test(pathname)) {
-    // At least one match
-    return pathname;
-  } else {
-    return `${url}/description`;
-  }
 }
 
 export default function Project(props: any) {
@@ -204,9 +188,6 @@ export default function Project(props: any) {
 
 function MainContentArea(props: { project: State<IProject> }) {
   const project = useHookstate(props.project);
-  const [sideNavCategory, setSideNavCategory] = useRecoilState(
-    sideMenuCategoryState
-  );
   const gState = useHookstate(globalState);
   let { path } = useRouteMatch();
   const history = useHistory();
@@ -382,7 +363,13 @@ function MainContentArea(props: { project: State<IProject> }) {
               <Description text={project.description.value} />
             </Paper>
           </Route>
-          <Route path={`${path}/description`}></Route>
+          <Route path={`${path}/description`}>
+            <Paper className={classes.paper}>
+              <Typography variant="h5">Description</Typography>
+              <Divider className={classes.divider} />
+              <Description text={project.description.value} />
+            </Paper>
+          </Route>
           <Route path={`${path}/comments`}>
             <Paper className={classes.paper}>
               <Typography variant="h5">Comments</Typography>
@@ -452,8 +439,9 @@ function DisplayImages(props: { images: IFile[] }) {
       <Carousel interval={10000}>
         {images
           .filter((file) => file.isImage === true)
-          .map((file) => (
+          .map((file, index) => (
             <div
+              key={index}
               className="bg-secondary"
               style={{
                 height: "400px",
@@ -461,6 +449,7 @@ function DisplayImages(props: { images: IFile[] }) {
               }}
             >
               <img
+                key={index}
                 src={imageUrl(file.identityId, file.key)}
                 className={classes.image}
               />
@@ -489,25 +478,27 @@ function DisplayImages(props: { images: IFile[] }) {
 
 function PillNav(props: { filesDisabled: boolean; buildLogDisabled: boolean }) {
   const { url } = useRouteMatch();
-
-  const [sideNavCategory, setSideNavCategory] = useRecoilState(
-    sideMenuCategoryState
-  );
+  const location = useLocation();
   const classes = useStyles();
 
-  const handleChange = (event: React.ChangeEvent<{}>, newValue: number) => {
-    if (newValue === SideNavCategory.BuildLog) {
-      setSideNavCategory({ category: newValue, buildStep: 0 });
-    } else {
-      setSideNavCategory({ category: newValue, buildStep: -1 });
+  // Helper to conver the location path into the category enum
+  const category = () => {
+    if (location.pathname.includes("comments")) {
+      return SideNavCategory.Comments;
     }
+    if (location.pathname.includes("files")) {
+      return SideNavCategory.Files;
+    }
+    if (location.pathname.includes("build-log")) {
+      return SideNavCategory.BuildLog;
+    }
+    return SideNavCategory.Description;
   };
 
   return (
     <div className={classes.centerPageNav}>
       <Tabs
-        value={sideNavCategory.category}
-        onChange={handleChange}
+        value={category()}
         className={classes.centerPageNav}
         indicatorColor="primary"
         textColor="primary"
@@ -517,7 +508,6 @@ function PillNav(props: { filesDisabled: boolean; buildLogDisabled: boolean }) {
       >
         <Tab
           label="Description"
-          classes={{ root: classes.pillTabRoot}}
           {...a11yProps(0)}
           component={RouterLink}
           to={`${url}/description`}
@@ -638,11 +628,7 @@ function TabPanel(props: {
       aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box p={p}>
-          <Typography>{children}</Typography>
-        </Box>
-      )}
+      {value === index && <Box p={p}>{children}</Box>}
     </div>
   );
 }
@@ -650,7 +636,14 @@ function TabPanel(props: {
 function ImageCard(props: { buildStep: State<IBuildStep> }) {
   const category = useHookstate(0);
   const buildStep = useHookstate(props.buildStep);
+  const [executeScroll, elRef] = useScroll();
   const classes = useStyles();
+  const location = useLocation();
+
+  // Checks for a matching hash path and scrolls if one is found.
+  useEffect(() => {
+    if (location.hash === `#${buildStep.id.value}`) executeScroll();
+  }, []);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: number) => {
     category.set(newValue);
@@ -659,7 +652,11 @@ function ImageCard(props: { buildStep: State<IBuildStep> }) {
   const images = props.buildStep.files.value.filter((i) => i.isImage);
 
   return (
-    <div id={buildStep.id.value.toString()} className={classes.buildStepTabs}>
+    <div
+      id={buildStep.id.value.toString()}
+      ref={elRef}
+      className={classes.buildStepTabs}
+    >
       <Paper>
         <DisplayImages images={images} />
         <Tabs

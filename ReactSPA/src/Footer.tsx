@@ -31,9 +31,6 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(3, 2),
     marginTop: "auto",
     backgroundColor: theme.palette.grey[200],
-    [theme.breakpoints.up("md")]: {
-      marginLeft: "240px",
-    },
   },
 }));
 

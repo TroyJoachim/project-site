@@ -1,9 +1,9 @@
 import React from "react";
 
 import { useHookstate, State } from "@hookstate/core";
-import { SideNavCategory, IProject, SideNavType } from "./types";
+import { IProject, SideNavType } from "./types";
 import { useRecoilState } from "recoil";
-import { sideMenuOpenState, sideMenuCategoryState } from "./state";
+import { sideMenuOpenState } from "./state";
 import {
   Link as RouterLink,
   useRouteMatch,
@@ -62,9 +62,6 @@ export default function SideNav(props: {
 }) {
   const project = useHookstate(props.project);
   const [sideNavOpen, setSideNavOpen] = useRecoilState(sideMenuOpenState);
-  const [sideNavCategory, setSideNavCategory] = useRecoilState(
-    sideMenuCategoryState
-  );
   const classes = useStyles();
   const { url } = useRouteMatch();
   const location = useLocation();
@@ -84,27 +81,13 @@ export default function SideNav(props: {
     setSideNavOpen(!sideNavOpen);
   };
 
-  const handleBuildStepClick = () => {
-    setSideNavCategory({ category: SideNavCategory.BuildLog, buildStep: 0 });
-  };
-
-  const handleClick = (category: SideNavCategory) => {
-    setSideNavCategory({ category: category, buildStep: -1 });
-  };
-
   const buildStepCategories = () => {
     return project.buildSteps.map((bs, index) => (
       <ListItem
         key={index}
         button
         className={classes.nested}
-        onClick={() => {
-          setSideNavCategory({
-            category: SideNavCategory.BuildLog,
-            buildStep: index,
-          });
-        }}
-        selected={sideNavCategory.buildStep === index}
+        selected={location.hash === `#${bs.id.value}`}
         component={HashLink}
         to={`${url}/build-log#${bs.id.value.toString()}`}
       >
@@ -130,8 +113,10 @@ export default function SideNav(props: {
         <List>
           <ListItem
             button
-            onClick={() => handleClick(SideNavCategory.Description)}
-            selected={location.pathname === `${url}/description`}
+            selected={
+              location.pathname === `${url}/description` ||
+              location.pathname == `${url}`
+            }
             component={RouterLink}
             to={`${url}/description`}
           >
@@ -142,7 +127,6 @@ export default function SideNav(props: {
           </ListItem>
           <ListItem
             button
-            onClick={() => handleClick(SideNavCategory.Comments)}
             selected={location.pathname === `${url}/comments`}
             component={RouterLink}
             to={`${url}/comments`}
@@ -154,7 +138,6 @@ export default function SideNav(props: {
           </ListItem>
           <ListItem
             button
-            onClick={() => handleClick(SideNavCategory.Files)}
             selected={location.pathname === `${url}/files`}
             component={RouterLink}
             to={`${url}/files`}
@@ -168,18 +151,31 @@ export default function SideNav(props: {
         <Divider />
       </div>
       <List>
-        <ListItem
-          button
-          onClick={handleBuildStepClick}
-          selected={location.pathname === `${url}/build-log`}
-          component={RouterLink}
-          to={`${url}/build-log`}
-        >
-          <ListItemIcon>
-            <FormatListNumberedIcon />
-          </ListItemIcon>
-          <ListItemText primary={"Build Log"} />
-        </ListItem>
+        {props.navType === SideNavType.Project ? (
+          <ListItem
+            button
+            selected={location.pathname === `${url}/build-log`}
+            component={RouterLink}
+            to={`${url}/build-log`}
+          >
+            <ListItemIcon>
+              <FormatListNumberedIcon />
+            </ListItemIcon>
+            <ListItemText primary={"Build Log"} />
+          </ListItem>
+        ) : (
+          <ListItem
+            button
+            selected={location.pathname === `${url}/build-log`}
+            onClick={() => window.scrollTo(0, 0)}
+          >
+            <ListItemIcon>
+              <FormatListNumberedIcon />
+            </ListItemIcon>
+            <ListItemText primary={"Build Log"} />
+          </ListItem>
+        )}
+
         <List component="div" disablePadding>
           {buildStepCategories()}
         </List>

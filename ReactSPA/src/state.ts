@@ -4,7 +4,6 @@ import {
   ForgotPasswordState,
   IComment,
   IChildComment,
-  SideNavCategory,
 } from "./types";
 
 // Recoil State Atoms
@@ -13,14 +12,6 @@ import {
 export const sideMenuOpenState = atom<boolean>({
   key: "sideMenuState",
   default: false,
-});
-
-export const sideMenuCategoryState = atom<{
-  category: SideNavCategory;
-  buildStep: number;
-}>({
-  key: "sideMenuState",
-  default: { category: SideNavCategory.Description, buildStep: -1 },
 });
 
 export const authState = atom<LoginState>({
@@ -33,7 +24,7 @@ export const authState = atom<LoginState>({
 });
 
 export const forgotPasswordState = atom<ForgotPasswordState>({
-  key: "authState",
+  key: "forgotPasswordState",
   default: {
     sent: false,
     username: "",

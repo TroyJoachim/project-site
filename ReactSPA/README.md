@@ -2,11 +2,9 @@
 
 ## 3rd Party Libraries 
 
-Bootstrap 4.5: https://getbootstrap.com/docs/4.5/getting-started/introduction/
-Font Awesome icons: https://fontawesome.com/
-React Bootstrap: https://react-bootstrap.github.io/
 React Router: https://reactrouter.com/
 Hookstate (state management): https://hookstate.js.org/ 
+Recoil (state management): https://recoiljs.org/
 Axios (client http requests): https://github.com/axios/axios
 
 

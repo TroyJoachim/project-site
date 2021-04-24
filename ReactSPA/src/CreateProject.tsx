@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useHookstate, Downgraded, State, none } from "@hookstate/core";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import ImageUpload from "./ImageUpload";
 import TextEditor from "./TextEditor";
 import FileUpload from "./FileUpload";
@@ -9,6 +9,7 @@ import { EditorState } from "draft-js";
 import { IBuildStep, IProject, IUser, ICategory, SideNavType } from "./types";
 import { createProject, getProjectCategories } from "./agent";
 import SideNav from "./SideNav";
+import { useScroll } from "./hooks";
 
 // Material UI
 import { makeStyles } from "@material-ui/core/styles";
@@ -17,16 +18,8 @@ import Container from "@material-ui/core/Container";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
 import ButtonGroup from "@material-ui/core/ButtonGroup";
-import { default as MButton } from "@material-ui/core/Button";
 import Box from "@material-ui/core/Box";
 import Grid from "@material-ui/core/Grid";
-import FormControl from "@material-ui/core/FormControl";
-import InputLabel from "@material-ui/core/InputLabel";
-import Input from "@material-ui/core/Input";
-import FormHelperText from "@material-ui/core/FormHelperText";
-import Select from "@material-ui/core/Select";
-import MenuItem from "@material-ui/core/MenuItem";
-import ListSubheader from "@material-ui/core/ListSubheader";
 import Button from "@material-ui/core/Button";
 import TextField from "@material-ui/core/TextField";
 
@@ -312,11 +305,11 @@ function CreateProject() {
                 className={classes.topButtons}
                 aria-label="cancel preview publish"
               >
-                <MButton color="secondary">Cancel</MButton>
-                <MButton>Preview</MButton>
-                <MButton color="primary" type="submit" form="main-form">
+                <Button color="secondary">Cancel</Button>
+                <Button>Preview</Button>
+                <Button color="primary" type="submit" form="main-form">
                   Publish
-                </MButton>
+                </Button>
               </ButtonGroup>
             </Grid>
           </Grid>
@@ -438,7 +431,13 @@ function BuildStep(props: {
   // could have used props.state everywhere instead
   const buildStep = useHookstate(props.buildStep);
   const editorState = useHookstate(EditorState.createEmpty());
+  const [executeScroll, elRef] = useScroll();
   const classes = useStyles();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash === `#${buildStep.id.value}`) executeScroll();
+  }, []);
 
   // TODO: this will need to confirm deletion if there is any information in the buildstep
   function deleteBuildStepClick() {
@@ -461,7 +460,7 @@ function BuildStep(props: {
     : "";
 
   return (
-    <Paper id={buildStep.id.value.toString()} className={classes.bsPaper}>
+    <Paper id={buildStep.id.value.toString()} ref={elRef} className={classes.bsPaper}>
       <form id="main-form" noValidate>
         <TextField
           id="build-step-title"
