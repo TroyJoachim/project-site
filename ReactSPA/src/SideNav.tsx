@@ -3,7 +3,7 @@ import React from "react";
 import { useHookstate, State } from "@hookstate/core";
 import { IProject, SideNavType } from "./types";
 import { useRecoilState } from "recoil";
-import { sideMenuOpenState } from "./state";
+import { sideNavOpenState } from "./state";
 import {
   Link as RouterLink,
   useRouteMatch,
@@ -23,6 +23,7 @@ import Divider from "@material-ui/core/Divider";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
+import { Typography } from "@material-ui/core";
 
 const drawerWidth = 240;
 
@@ -39,10 +40,6 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     drawerPaper: {
       width: drawerWidth,
-      top: "64px",
-      [theme.breakpoints.down("xs")]: {
-        top: "56px",
-      },
     },
     nested: {
       paddingLeft: theme.spacing(3),
@@ -56,15 +53,9 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 );
 
-export default function SideNav(props: {
-  project: State<IProject>;
-  navType: SideNavType;
-}) {
-  const project = useHookstate(props.project);
-  const [sideNavOpen, setSideNavOpen] = useRecoilState(sideMenuOpenState);
+export default function SideNav() {
+  const [sideNavOpen, setSideNavOpen] = useRecoilState(sideNavOpenState);
   const classes = useStyles();
-  const { url } = useRouteMatch();
-  const location = useLocation();
 
   const toggleDrawer = () => (
     event: React.KeyboardEvent | React.MouseEvent
@@ -81,137 +72,26 @@ export default function SideNav(props: {
     setSideNavOpen(!sideNavOpen);
   };
 
-  const buildStepCategories = () => {
-    return project.buildSteps.map((bs, index) => (
-      <ListItem
-        key={index}
-        button
-        className={classes.nested}
-        selected={location.hash === `#${bs.id.value}`}
-        component={HashLink}
-        to={`${url}/build-log#${bs.id.value.toString()}`}
-      >
-        <ListItemText
-          primary={
-            <>
-              <strong>Step {(index + 1).toString()}: </strong>
-              {bs.title.value}
-            </>
-          }
-        />
-      </ListItem>
-    ));
-  };
-
-  // TODO: Might be able to change to a boolean in the future if the other types are not needed.
-  const displayTopCategories =
-    props.navType === SideNavType.Project ? "" : classes.displayNone;
-
-  const list = () => (
-    <div className={classes.list} role="presentation">
-      <div className={displayTopCategories}>
-        <List>
-          <ListItem
-            button
-            selected={
-              location.pathname === `${url}/description` ||
-              location.pathname == `${url}`
-            }
-            component={RouterLink}
-            to={`${url}/description`}
-          >
-            <ListItemIcon>
-              <DescriptionIcon />
-            </ListItemIcon>
-            <ListItemText primary={"Description"} />
-          </ListItem>
-          <ListItem
-            button
-            selected={location.pathname === `${url}/comments`}
-            component={RouterLink}
-            to={`${url}/comments`}
-          >
-            <ListItemIcon>
-              <CommentIcon />
-            </ListItemIcon>
-            <ListItemText primary={"Comments"} />
-          </ListItem>
-          <ListItem
-            button
-            selected={location.pathname === `${url}/files`}
-            component={RouterLink}
-            to={`${url}/files`}
-          >
-            <ListItemIcon>
-              <CloudDownloadIcon />
-            </ListItemIcon>
-            <ListItemText primary={"Files"} />
-          </ListItem>
-        </List>
-        <Divider />
-      </div>
-      <List>
-        {props.navType === SideNavType.Project ? (
-          <ListItem
-            button
-            selected={location.pathname === `${url}/build-log`}
-            component={RouterLink}
-            to={`${url}/build-log`}
-          >
-            <ListItemIcon>
-              <FormatListNumberedIcon />
-            </ListItemIcon>
-            <ListItemText primary={"Build Log"} />
-          </ListItem>
-        ) : (
-          <ListItem
-            button
-            selected={location.pathname === `${url}/build-log`}
-            onClick={() => window.scrollTo(0, 0)}
-          >
-            <ListItemIcon>
-              <FormatListNumberedIcon />
-            </ListItemIcon>
-            <ListItemText primary={"Build Log"} />
-          </ListItem>
-        )}
-
-        <List component="div" disablePadding>
-          {buildStepCategories()}
-        </List>
-      </List>
-    </div>
-  );
-
   return (
-    <>
-      <Hidden smDown>
-        <Drawer
-          elevation={4}
-          anchor="left"
-          variant="permanent"
-          classes={{
-            paper: classes.drawerPaper,
-          }}
-        >
-          {list()}
-        </Drawer>
-      </Hidden>
-      <Hidden mdUp>
-        <SwipeableDrawer
-          variant="temporary"
-          className={classes.drawer}
-          anchor="left"
-          open={sideNavOpen}
-          onClose={toggleDrawer()}
-          onOpen={toggleDrawer()}
-          classes={{
-            paper: classes.drawerPaper,
-          }}
-        >
-          {list()}
-        </SwipeableDrawer>
-      </Hidden>
-    </>
+    <SwipeableDrawer
+      variant="temporary"
+      className={classes.drawer}
+      anchor="right"
+      open={sideNavOpen}
+      onClose={toggleDrawer()}
+      onOpen={toggleDrawer()}
+      classes={{
+        paper: classes.drawerPaper,
+      }}
+    >
+      <List>
+        <ListItem button>
+          <ListItemIcon>
+            <DescriptionIcon />
+          </ListItemIcon>
+          <ListItemText primary={"Categories"} />
+        </ListItem>
+      </List>
+    </SwipeableDrawer>
   );
 }

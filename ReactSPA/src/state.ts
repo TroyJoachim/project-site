@@ -9,8 +9,13 @@ import {
 // Recoil State Atoms
 // IMPORTANT: unique ID (with respect to other atoms/selectors)
 
-export const sideMenuOpenState = atom<boolean>({
-  key: "sideMenuState",
+export const sideNavOpenState = atom<boolean>({
+  key: "sideNavOpenState",
+  default: false,
+});
+
+export const pageNavOpenState = atom<boolean>({
+  key: "pageNavOpenState",
   default: false,
 });
 

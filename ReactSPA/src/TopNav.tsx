@@ -5,16 +5,17 @@ import { getProjectCategories } from "./agent";
 import { ICategory } from "./types";
 import { globalState, signOut } from "./globalState";
 import { useRecoilState } from "recoil";
-import { sideMenuOpenState } from "./state";
+import { sideNavOpenState } from "./state";
 import SearchDialog from "./SearchDialog";
 
 // Material UI
 import {
-  fade,
   makeStyles,
   Theme,
   createStyles,
+  useTheme,
 } from "@material-ui/core/styles";
+import useMediaQuery from "@material-ui/core/useMediaQuery";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import IconButton from "@material-ui/core/IconButton";
@@ -47,15 +48,9 @@ const useStyles = makeStyles((theme: Theme) =>
       flexGrow: 1,
     },
     menuButton: {
-      marginRight: theme.spacing(2),
+      marginLeft: theme.spacing(1),
       [theme.breakpoints.up("md")]: {
         display: "none",
-      },
-    },
-    title: {
-      display: "none",
-      [theme.breakpoints.up("sm")]: {
-        display: "block",
       },
     },
     inputRoot: {
@@ -96,86 +91,6 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 );
 
-// function TopNav() {
-//   const categories = useHookstate<ICategory[]>([]);
-//   const gState = useHookstate(globalState);
-
-//   useEffect(() => {
-//     // getProjectCategories().then((response) => {
-//     //   if (response && response.status === 200) {
-//     //     categories.set(response.data);
-//     //   }
-//     // });
-//   }, []); // Note: Empty array at the end ensures that this is only performed once during mount
-
-//   function buildCategoryDropdown() {
-//     function mapSubcategories(subcats: ICategory[]) {
-//       return subcats.map((sc, i) => (
-//         <NavDropdown.Item key={sc.name + i.toString()}>
-//           {sc.name}
-//         </NavDropdown.Item>
-//       ));
-//     }
-
-//     return categories.map((cat, i) => [
-//       <NavDropdown.Item key={i} className="bg-light font-weight-bold">
-//         {cat.name.get()}
-//       </NavDropdown.Item>,
-//       mapSubcategories(cat.subcategories.get()),
-//     ]);
-//   }
-
-//   function signInLink() {
-//     if (gState.isAuthenticated.get()) {
-//       return (
-//         <NavDropdown id="user_account_dropdown" title="Account" alignRight>
-//           <NavDropdown.Item
-//             as={Link}
-//             to={"/my-account/" + gState.username.get()}
-//           >
-//             My Account
-//           </NavDropdown.Item>
-//           <NavDropdown.Item onClick={signOut}>Sign Out</NavDropdown.Item>
-//         </NavDropdown>
-//       );
-//     } else {
-//       return (
-//         <Nav.Link as={Link} to="/sign-in" className="text-nowrap">
-//           Sign In
-//         </Nav.Link>
-//       );
-//     }
-//   }
-
-//   const classes = useStyles();
-
-//   return (
-
-//     // <Navbar expand="lg" className="main_navbar">
-//     //   <Navbar.Brand as={Link} className="mx-auto" to="/">
-//     //     React-Bootstrap
-//     //   </Navbar.Brand>
-//     //   <Navbar.Toggle aria-controls="basic-navbar-nav" />
-//     //   <Navbar.Collapse id="basic-navbar-nav">
-//     //     <Nav className="mr-auto">
-//     //       <NavDropdown title="Categories" id="basic-nav-dropdown">
-//     //         {buildCategoryDropdown()}
-//     //       </NavDropdown>
-//     //     </Nav>
-//     //     <Form className="mx-2 my-auto d-inline w-100">
-//     //       <Form.Control type="text" placeholder="Search" />
-//     //     </Form>
-//     //     <Nav className="ml-auto">
-//     //       <Nav.Link as={Link} to="/create-project">
-//     //         Create
-//     //       </Nav.Link>
-//     //       {signInLink()}
-//     //     </Nav>
-//     //   </Navbar.Collapse>
-//     // </Navbar>
-//   );
-// }
-
 export default function TopNav() {
   const gState = useHookstate(globalState);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -183,10 +98,12 @@ export default function TopNav() {
     mobileMoreAnchorEl,
     setMobileMoreAnchorEl,
   ] = useState<null | HTMLElement>(null);
-  const [sideNavOpen, setSideNavOpen] = useRecoilState(sideMenuOpenState);
+  const [sideNavOpen, setSideNavOpen] = useRecoilState(sideNavOpenState);
   const searchDialogOpen = useHookstate(false);
   const history = useHistory();
   const classes = useStyles();
+  const theme = useTheme();
+  const matches = useMediaQuery(theme.breakpoints.up("md"));
 
   useEffect(() => {
     // getProjectCategories().then((response) => {
@@ -216,7 +133,7 @@ export default function TopNav() {
     setMobileMoreAnchorEl(event.currentTarget);
   };
 
-  const toggleDrawer = () => {
+  const toggleSideNav = () => {
     setSideNavOpen(!sideNavOpen);
   };
 
@@ -228,6 +145,8 @@ export default function TopNav() {
   const handleSearchDialogOpen = () => {
     searchDialogOpen.set(true);
   };
+
+  const appBarPosition = () => (matches ? "fixed" : "absolute");
 
   const menuId = "primary-search-account-menu";
   const renderMenu = (
@@ -297,75 +216,65 @@ export default function TopNav() {
   //   ></Menu>
   // );
 
-  const mobileMenuId = "primary-search-account-menu-mobile";
+  // const mobileMenuId = "primary-search-account-menu-mobile";
 
   const avatarUrl =
     "https://d1sam1rvgl833u.cloudfront.net/fit-in/40x40/protected/" +
     gState.identityId.value +
     "/user-avatar.png";
 
-  const renderMobileMenu = (
-    <Menu
-      anchorEl={mobileMoreAnchorEl}
-      anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      id={mobileMenuId}
-      keepMounted
-      transformOrigin={{ vertical: "bottom", horizontal: "right" }}
-      open={isMobileMenuOpen}
-      onClose={handleMobileMenuClose}
-    >
-      <MenuItem>
-        <IconButton aria-label="show 4 new mails" color="inherit">
-          <Badge badgeContent={4} color="secondary">
-            <MailIcon />
-          </Badge>
-        </IconButton>
-        <p>Messages</p>
-      </MenuItem>
-      <MenuItem>
-        <IconButton aria-label="show 11 new notifications" color="inherit">
-          <Badge badgeContent={11} color="secondary">
-            <NotificationsIcon />
-          </Badge>
-        </IconButton>
-        <p>Notifications</p>
-      </MenuItem>
-      <MenuItem onClick={handleProfileMenuOpen}>
-        <IconButton
-          aria-label="account of current user"
-          aria-controls="primary-search-account-menu"
-          aria-haspopup="true"
-          color="inherit"
-        >
-          {gState.isAuthenticated ? (
-            <Avatar
-              alt={gState.username.value ? gState.username.value : ""}
-              src={avatarUrl}
-            />
-          ) : (
-            <AccountCircle />
-          )}
-        </IconButton>
-        <p>Profile</p>
-      </MenuItem>
-    </Menu>
-  );
+  // const renderMobileMenu = (
+  //   <Menu
+  //     anchorEl={mobileMoreAnchorEl}
+  //     anchorOrigin={{ vertical: "top", horizontal: "right" }}
+  //     id={mobileMenuId}
+  //     keepMounted
+  //     transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+  //     open={isMobileMenuOpen}
+  //     onClose={handleMobileMenuClose}
+  //   >
+  //     <MenuItem>
+  //       <IconButton aria-label="show 4 new mails" color="inherit">
+  //         <Badge badgeContent={4} color="secondary">
+  //           <MailIcon />
+  //         </Badge>
+  //       </IconButton>
+  //       <p>Messages</p>
+  //     </MenuItem>
+  //     <MenuItem>
+  //       <IconButton aria-label="show 11 new notifications" color="inherit">
+  //         <Badge badgeContent={11} color="secondary">
+  //           <NotificationsIcon />
+  //         </Badge>
+  //       </IconButton>
+  //       <p>Notifications</p>
+  //     </MenuItem>
+  //     <MenuItem onClick={handleProfileMenuOpen}>
+  //       <IconButton
+  //         aria-label="account of current user"
+  //         aria-controls="primary-search-account-menu"
+  //         aria-haspopup="true"
+  //         color="inherit"
+  //       >
+  //         {gState.isAuthenticated ? (
+  //           <Avatar
+  //             alt={gState.username.value ? gState.username.value : ""}
+  //             src={avatarUrl}
+  //           />
+  //         ) : (
+  //           <AccountCircle />
+  //         )}
+  //       </IconButton>
+  //       <p>Profile</p>
+  //     </MenuItem>
+  //   </Menu>
+  // );
 
   return (
     <>
-      <AppBar position="fixed" className={classes.appBar}>
+      <AppBar position={appBarPosition()} className={classes.appBar}>
         <Toolbar>
-          <IconButton
-            edge="start"
-            className={classes.menuButton}
-            color="inherit"
-            aria-label="open drawer"
-            onClick={toggleDrawer}
-          >
-            <MenuIcon />
-          </IconButton>
           <Typography
-            className={classes.title}
             variant="h6"
             noWrap
             onClick={() => {
@@ -382,45 +291,43 @@ export default function TopNav() {
           >
             <SearchIcon />
           </IconButton>
-          <div className={classes.sectionDesktop}>
-            <IconButton aria-label="show 4 new mails" color="inherit">
-              <Badge badgeContent={4} color="secondary">
-                <MailIcon />
-              </Badge>
+          <IconButton aria-label="show 4 new mails" color="inherit">
+            <Badge badgeContent={4} color="secondary">
+              <MailIcon />
+            </Badge>
+          </IconButton>
+          <IconButton aria-label="show 17 new notifications" color="inherit">
+            <Badge badgeContent={17} color="secondary">
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
+          {gState.isAuthenticated.value ? (
+            <IconButton
+              edge="end"
+              aria-label="account of current user"
+              aria-controls={menuId}
+              aria-haspopup="true"
+              onClick={handleProfileMenuOpen}
+              color="inherit"
+            >
+              <Avatar
+                alt={gState.username.value ? gState.username.value : ""}
+                src={avatarUrl}
+              />
             </IconButton>
-            <IconButton aria-label="show 17 new notifications" color="inherit">
-              <Badge badgeContent={17} color="secondary">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-            {gState.isAuthenticated.value ? (
-              <IconButton
-                edge="end"
-                aria-label="account of current user"
-                aria-controls={menuId}
-                aria-haspopup="true"
-                onClick={handleProfileMenuOpen}
-                color="inherit"
-              >
-                <Avatar
-                  alt={gState.username.value ? gState.username.value : ""}
-                  src={avatarUrl}
-                />
-              </IconButton>
-            ) : (
-              <Button
-                variant="outlined"
-                color="secondary"
-                size="small"
-                classes={{ root: classes.btnRoot }}
-                className={classes.signInBtn}
-                onClick={() => history.push("/sign-in")}
-              >
-                SIGN IN
-              </Button>
-            )}
-          </div>
-          <div className={classes.sectionMobile}>
+          ) : (
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              classes={{ root: classes.btnRoot }}
+              className={classes.signInBtn}
+              onClick={() => history.push("/sign-in")}
+            >
+              SIGN IN
+            </Button>
+          )}
+          {/* <div className={classes.sectionMobile}>
             <IconButton
               aria-label="show more"
               aria-controls={mobileMenuId}
@@ -430,11 +337,19 @@ export default function TopNav() {
             >
               <MoreIcon />
             </IconButton>
-          </div>
+          </div> */}
+          <IconButton
+            edge="start"
+            className={classes.menuButton}
+            color="inherit"
+            aria-label="open side navigation"
+            onClick={toggleSideNav}
+          >
+            <MenuIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
       <SearchDialog open={searchDialogOpen} />
-      {renderMobileMenu}
       {renderMenu}
     </>
   );

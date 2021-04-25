@@ -8,7 +8,7 @@ import UploadingProjectModal from "./UploadingProjectModal";
 import { EditorState } from "draft-js";
 import { IBuildStep, IProject, IUser, ICategory, SideNavType } from "./types";
 import { createProject, getProjectCategories } from "./agent";
-import SideNav from "./SideNav";
+import PageNav from "./PageNav";
 import { useScroll } from "./hooks";
 
 // Material UI
@@ -290,7 +290,7 @@ function CreateProject() {
 
   return (
     <div className={classes.content}>
-      <SideNav project={project} navType={SideNavType.CreateProject} />
+      <PageNav project={project} navType={SideNavType.CreateProject} />
       <Container maxWidth="md">
         <Box mb={2}>
           <Grid container>

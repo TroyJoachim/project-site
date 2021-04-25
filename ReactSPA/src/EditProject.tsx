@@ -17,7 +17,7 @@ import {
 import { editProject, getProjectCategories, getProject } from "./agent";
 import { Storage } from "aws-amplify";
 import { EditorState, convertFromRaw, RawDraftContentState } from "draft-js";
-import SideNav from "./SideNav";
+import PageNav from "./PageNav";
 import { useScroll } from "./hooks";
 
 // Material UI
@@ -392,7 +392,7 @@ export default function EditProject(props: any) {
 
   return (
     <div className={classes.content}>
-      <SideNav project={project} navType={SideNavType.EditProject} />
+      <PageNav project={project} navType={SideNavType.EditProject} />
       <Container maxWidth="md">
         <Box mb={2}>
           <Grid container>
@@ -551,7 +551,7 @@ function BuildStep(props: {
       editorState.set(newEditorState);
     }
 
-    console.log("hit")
+    console.log("hit");
 
     if (location.hash === `#${buildStep.id.value}`) executeScroll();
   }, []);

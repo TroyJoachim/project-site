@@ -6,6 +6,8 @@ import ReactHtmlParser from "react-html-parser";
 import { localizeDateTime, downloadBlob, humanFileSize } from "./helpers";
 import { Storage } from "aws-amplify";
 import { useScroll } from "./hooks";
+import PageAppBar from "./PageAppBar";
+
 import {
   Link as RouterLink,
   Switch,
@@ -15,7 +17,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import CommentCard from "./CommentCard";
-import SideNav from "./SideNav";
+import PageNav from "./PageNav";
 import {
   IFile,
   IProject,
@@ -69,6 +71,15 @@ const useStyles = makeStyles((theme) => ({
   titleRightColumn: {
     marginLeft: "10px",
     width: "100%",
+  },
+  topButtons: {
+    marginBottom: "5px",
+    "&:after": {
+      // ClearFix
+      content: '""',
+      clear: "both",
+      display: "table",
+    },
   },
   editProjectBtn: {
     float: "right",
@@ -285,116 +296,120 @@ function MainContentArea(props: { project: State<IProject> }) {
     "/user-avatar.png";
 
   return (
-    <div className={classes.content}>
-      <SideNav project={project} navType={SideNavType.Project} />
-      <Container maxWidth="md">
-        <Grid container className={classes.titleWrapper}>
-          <Grid item sm={7}>
-            <div className={classes.titleText}>
-              <Link component={RouterLink} to="/">
-                <Avatar alt={project.user.username.value} src={avatarUrl} />
-              </Link>
-              <div className={classes.titleRightColumn}>
-                <Typography variant="h5">{project.title.value}</Typography>
-                <Typography variant="subtitle1">
-                  Created by:{" "}
-                  <Link component={RouterLink} to="/">
-                    {project.user.username.value}
-                  </Link>{" "}
-                  on {localizeDateTime(project.createdAt.value)}
-                </Typography>
+    <div>
+      <PageAppBar />
+
+      <div className={classes.content}>
+        <PageNav project={project} navType={SideNavType.Project} />
+        <Container maxWidth="md">
+          <Grid container className={classes.titleWrapper}>
+            <Grid item sm={7}>
+              <div className={classes.titleText}>
+                <Link component={RouterLink} to="/">
+                  <Avatar alt={project.user.username.value} src={avatarUrl} />
+                </Link>
+                <div className={classes.titleRightColumn}>
+                  <Typography variant="h5">{project.title.value}</Typography>
+                  <Typography variant="subtitle1">
+                    Created by:{" "}
+                    <Link component={RouterLink} to="/">
+                      {project.user.username.value}
+                    </Link>{" "}
+                    on {localizeDateTime(project.createdAt.value)}
+                  </Typography>
+                </div>
               </div>
-            </div>
+            </Grid>
+            <Grid item sm={5}></Grid>
           </Grid>
-          <Grid item sm={5}></Grid>
-        </Grid>
-        <div>
-          <Button
-            color="primary"
-            className={project.liked.value ? classes.iconActive : ""}
-            onClick={() => handleLike(project.id.value)}
-          >
-            <ThumbUpIcon className={classes.pageNavIcon} />{" "}
-            {project.liked.value ? "Liked" : "Like"}
-          </Button>
-          <Button
-            color="primary"
-            className={project.collected.value ? classes.iconActive : ""}
-            onClick={() => handleCollect(project.id.value)}
-          >
-            <CollectionsIcon className={classes.pageNavIcon} />{" "}
-            {project.collected.value ? "Collected" : "Collect"}
-          </Button>
-          <Button
-            color="primary"
-            //className={project.collected.value ? classes.iconActive : ""}
-            //onClick={() => handleCollect(project.id.value)}
-          >
-            <ShareIcon className={classes.pageNavIcon} />
-            Share
-          </Button>
-          {isThem() ? (
+          <div className={classes.topButtons}>
             <Button
-              variant="contained"
               color="primary"
-              size="small"
-              className={classes.editProjectBtn}
-              onClick={handleEditClick}
+              className={project.liked.value ? classes.iconActive : ""}
+              onClick={() => handleLike(project.id.value)}
             >
-              Edit
+              <ThumbUpIcon className={classes.pageNavIcon} />{" "}
+              {project.liked.value ? "Liked" : "Like"}
             </Button>
-          ) : (
-            <></>
-          )}
-        </div>
-
-        <DisplayImages images={images} />
-
-        <PillNav
-          filesDisabled={filesDisabled()}
-          buildLogDisabled={buildLogDisabled()}
-        />
-
-        <Switch>
-          <Route exact path={path}>
-            <Paper className={classes.paper}>
-              <Typography variant="h5">Description</Typography>
-              <Divider className={classes.divider} />
-              <Description text={project.description.value} />
-            </Paper>
-          </Route>
-          <Route path={`${path}/description`}>
-            <Paper className={classes.paper}>
-              <Typography variant="h5">Description</Typography>
-              <Divider className={classes.divider} />
-              <Description text={project.description.value} />
-            </Paper>
-          </Route>
-          <Route path={`${path}/comments`}>
-            <Paper className={classes.paper}>
-              <Typography variant="h5">Comments</Typography>
-              <Divider className={classes.divider} />
-              <CommentCard projectId={project.id.value} />
-            </Paper>
-          </Route>
-          <Route path={`${path}/files`}>
-            <Paper className={classes.paper}>
-              <Typography variant="h5">Project Files</Typography>
-              <Divider className={classes.divider} />
-              <FileList files={props.project.files.value} />
-            </Paper>
-          </Route>
-          <Route path={`${path}/build-log`}>
-            {props.project.buildSteps.value ? (
-              props.project.buildSteps.map((bs, index) => (
-                <ImageCard key={index} buildStep={bs} />
-              ))
+            <Button
+              color="primary"
+              className={project.collected.value ? classes.iconActive : ""}
+              onClick={() => handleCollect(project.id.value)}
+            >
+              <CollectionsIcon className={classes.pageNavIcon} />{" "}
+              {project.collected.value ? "Collected" : "Collect"}
+            </Button>
+            <Button
+              color="primary"
+              //className={project.collected.value ? classes.iconActive : ""}
+              //onClick={() => handleCollect(project.id.value)}
+            >
+              <ShareIcon className={classes.pageNavIcon} />
+              Share
+            </Button>
+            {isThem() ? (
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                className={classes.editProjectBtn}
+                onClick={handleEditClick}
+              >
+                Edit
+              </Button>
             ) : (
               <></>
             )}
-          </Route>
-        </Switch>
-      </Container>
+          </div>
+
+          <DisplayImages images={images} />
+
+          <PillNav
+            filesDisabled={filesDisabled()}
+            buildLogDisabled={buildLogDisabled()}
+          />
+
+          <Switch>
+            <Route exact path={path}>
+              <Paper className={classes.paper}>
+                <Typography variant="h5">Description</Typography>
+                <Divider className={classes.divider} />
+                <Description text={project.description.value} />
+              </Paper>
+            </Route>
+            <Route path={`${path}/description`}>
+              <Paper className={classes.paper}>
+                <Typography variant="h5">Description</Typography>
+                <Divider className={classes.divider} />
+                <Description text={project.description.value} />
+              </Paper>
+            </Route>
+            <Route path={`${path}/comments`}>
+              <Paper className={classes.paper}>
+                <Typography variant="h5">Comments</Typography>
+                <Divider className={classes.divider} />
+                <CommentCard projectId={project.id.value} />
+              </Paper>
+            </Route>
+            <Route path={`${path}/files`}>
+              <Paper className={classes.paper}>
+                <Typography variant="h5">Project Files</Typography>
+                <Divider className={classes.divider} />
+                <FileList files={props.project.files.value} />
+              </Paper>
+            </Route>
+            <Route path={`${path}/build-log`}>
+              {props.project.buildSteps.value ? (
+                props.project.buildSteps.map((bs, index) => (
+                  <ImageCard key={index} buildStep={bs} />
+                ))
+              ) : (
+                <></>
+              )}
+            </Route>
+          </Switch>
+        </Container>
+      </div>
     </div>
   );
 }

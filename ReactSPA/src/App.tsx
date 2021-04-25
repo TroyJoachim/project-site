@@ -20,8 +20,9 @@ import {
 import { RecoilRoot } from "recoil";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import { makeStyles } from "@material-ui/core/styles";
+import SideNav from "./SideNav";
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(() => ({
   main: {
     marginTop: "64px",
   },
@@ -54,6 +55,7 @@ export default function App() {
         <Router>
           <CssBaseline />
           <TopNav />
+          <SideNav />
           <main className={classes.main}>
             <Switch>
               <Route exact path="/">
